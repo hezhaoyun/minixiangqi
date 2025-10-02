@@ -107,7 +107,7 @@ def search(board, depth, player):
 
 
 if __name__ == "__main__":
-    initial_board = get_initial_board()
+    initial_board = board_from_fen("rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1")
 
     # 示例: 为红方搜索, 搜索深度为3
     # 注意: 深度为3可能需要几秒钟, 深度为4或更高会非常慢

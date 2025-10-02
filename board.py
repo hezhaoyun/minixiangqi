@@ -182,3 +182,31 @@ def get_initial_board():
         [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
         [R_ROOK, R_HORSE, R_BISHOP, R_GUARD, R_KING, R_GUARD, R_BISHOP, R_HORSE, R_ROOK],
     ]
+
+
+def board_from_fen(fen):
+    """
+    从FEN字符串创建棋盘
+    FEN standard for Xiangqi (from https://www.wxf-xiangqi.org/images/doc/wxf-fen-v1.0.pdf)
+    Piece representation:
+    Red: K, A, B, N, R, C, P
+    Black: k, a, b, n, r, c, p
+    """
+    fen_map = {
+        'k': B_KING, 'a': B_GUARD, 'b': B_BISHOP, 'n': B_HORSE, 'r': B_ROOK, 'c': B_CANNON, 'p': B_PAWN,
+        'K': R_KING, 'A': R_GUARD, 'B': R_BISHOP, 'N': R_HORSE, 'R': R_ROOK, 'C': R_CANNON, 'P': R_PAWN,
+    }
+    
+    board = []
+    fen_board = fen.split(' ')[0]
+    rows = fen_board.split('/')
+
+    for row_str in rows:
+        row = []
+        for char in row_str:
+            if char.isdigit():
+                row.extend([EMPTY] * int(char))
+            else:
+                row.append(fen_map.get(char, EMPTY))
+        board.append(row)
+    return board
