@@ -1,6 +1,6 @@
 import math
 
-from model import model1, model2, model3, model4
+from model import *
 
 
 # Negamax + α-β剪枝实现
@@ -80,7 +80,4 @@ def search(root):
 
 
 if __name__ == "__main__":
-    search(model1())
-    # search(model2())
-    # search(model3())
-    # search(model4())
+    search(models()[0])

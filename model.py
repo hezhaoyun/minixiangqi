@@ -70,17 +70,5 @@ N11 = Node("N11", children=[N22, N23])
 N00 = Node("N00", children=[N10, N11])
 
 
-def model1():
-    return root
-
-
-def model2():
-    return N00
-
-
-def model3():
-    return N10
-
-
-def model4():
-    return N11
+def models():
+    return root, N00, N10, N11
