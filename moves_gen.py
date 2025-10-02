@@ -219,6 +219,41 @@ def get_pawn_moves(board, r, c):
                     moves.append(((r, c), (nr, nc)))
     return moves
 
+def order_moves(board, moves, best_move_from_tt=None):
+    """
+    对着法列表进行排序，以优化Alpha-Beta剪枝效率。
+    排序策略:
+    1. 置换表中的最佳着法
+    2. MVV-LVA (最有价值的被攻击者 - 最低价值的攻击者)
+    """
+    move_scores = {}
+    # 为吃子动作设置一个高的基础分，确保它们排在非吃子动作前面
+    CAPTURE_BONUS = 10000
+
+    for move in moves:
+        score = 0
+        from_r, from_c = move[0]
+        to_r, to_c = move[1]
+
+        # 1. 如果是置换表中的最佳着法，给予最高分
+        if move == best_move_from_tt:
+            score = 100000
+        else:
+            # 2. 评估吃子着法
+            captured_piece = board[to_r][to_c]
+            if captured_piece != EMPTY:
+                moving_piece = board[from_r][from_c]
+                # 使用棋子价值的绝对值进行MVV-LVA评分
+                victim_value = abs(PIECE_VALUES.get(captured_piece, 0))
+                attacker_value = abs(PIECE_VALUES.get(moving_piece, 0))
+                score = CAPTURE_BONUS + victim_value - attacker_value
+        
+        move_scores[move] = score
+
+    # 按分数降序排序
+    return sorted(moves, key=lambda m: move_scores[m], reverse=True)
+
+
 if __name__ == '__main__':
     # 示例: 测试初始棋盘红方的走法
     initial_board = get_initial_board()

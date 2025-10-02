@@ -32,16 +32,16 @@ def evaluate(board):
 
 if __name__ == '__main__':
     # 示例: 评估初始局面
-    initial_board = get_initial_board()
-    initial_score = evaluate(initial_board)
+    initial_board = Board()
+    initial_score = evaluate(initial_board.board)
 
     print("初始局面评估分数:", initial_score)
     # 初始局面双方均等, 分数应该接近0 (由于位置价值不对称, 不会完全为0)
 
     # 示例: 红方拿掉黑方一个车
-    board_without_b_rook = get_initial_board()
-    board_without_b_rook[0][0] = EMPTY
-    score_after_capture = evaluate(board_without_b_rook)
+    board_without_b_rook = Board()
+    board_without_b_rook.board[0][0] = EMPTY
+    score_after_capture = evaluate(board_without_b_rook.board)
 
     print("红方拿掉黑方一个车后的评估分数:", score_after_capture)
     # 分数应该显著为正, 表示红方巨大优势
