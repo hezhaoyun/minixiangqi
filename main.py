@@ -116,7 +116,7 @@ if __name__ == "__main__":
     board = Board()
     init_fen = board.to_fen()
 
-    for s in range(6):
+    for s in range(16):
         result_fen = search(
             init_fen, 4, show_init_board=(s == 0))  # 增加一点深度以体现性能
         if result_fen is None:
