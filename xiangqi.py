@@ -87,17 +87,19 @@ def negamax(board, depth, alpha, beta, player):
     return best_value, best_move
 
 
-def search(fen_string, depth):
+def search(fen_string, depth, show_init_board=False):
     initial_board = board_from_fen(fen_string)
 
     # Determine player from FEN string
     player_char = fen_string.split(' ')[1]
     player = 1 if player_char == 'w' else -1
 
-    print(f"初始棋盘 ({fen_string})：")
-    print_board_text(initial_board)
+    if show_init_board:
+        print(f"初始棋盘 ({fen_string})：")
+        print_board_text(initial_board)
 
-    final_score, best_move = negamax(initial_board, depth, -math.inf, math.inf, player)
+    final_score, best_move = negamax(
+        initial_board, depth, -math.inf, math.inf, player)
 
     print(f"评估分数 (从当前玩家角度): {final_score}，", end="")
 
@@ -120,13 +122,19 @@ def search(fen_string, depth):
 
         next_player = -player
         new_fen = board_to_fen(new_board, next_player)
-        print(f"新棋盘的FEN字符串: {new_fen}")
+        return new_fen
 
-    else:
-        print("没有找到最佳着法.")
-
+    print("没有找到最佳着法.")
+    return None
 
 
 if __name__ == "__main__":
-    fen_string = board_to_fen(get_initial_board(), 1)
-    search(fen_string, 3)
+
+    init_fen = board_to_fen(get_initial_board(), 1)
+
+    for s in range(6):
+        result_fen = search(init_fen, 4, show_init_board=(s == 0))
+        if result_fen is None:
+            break
+
+        init_fen = result_fen
