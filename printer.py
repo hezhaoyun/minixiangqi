@@ -13,7 +13,7 @@ def print_board_text(board):
         R_KING: '帥', R_GUARD: '仕', R_BISHOP: '相', R_HORSE: '傌', R_ROOK: '俥', R_CANNON: '炮', R_PAWN: '兵',
         EMPTY: '・'
     }
-    print("\n   0  1  2  3  4  5  6  7  8")
+    print("   0  1  2  3  4  5  6  7  8")
     print("-----------------------------")
     for i, row in enumerate(board):
         row_items = [f"{i}|"]

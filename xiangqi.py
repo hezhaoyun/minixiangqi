@@ -87,38 +87,20 @@ def negamax(board, depth, alpha, beta, player):
     return best_value, best_move
 
 
-def search(board, depth, player):
-    """
-    开始搜索
-    :param board: 初始棋盘
-    :param depth: 搜索深度
-    :param player: 开始玩家
-    """
-    print("="*20 + f" 开始为玩家 {player} 搜索 (深度: {depth}) " + "="*20)
-    final_score, best_move = negamax(board, depth, -math.inf, math.inf, player)
-    print("="*20 + " 搜索结束 " + "="*20)
-    return final_score, best_move
-
-
-if __name__ == "__main__":
-    fen_string = "rCbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/7C1/9/RNBAKABNR b - - 0 1"
+def search(fen_string, depth):
     initial_board = board_from_fen(fen_string)
 
     # Determine player from FEN string
     player_char = fen_string.split(' ')[1]
     player = 1 if player_char == 'w' else -1
 
-    print(f"初始棋盘 (FEN: {fen_string}):")
+    print(f"初始棋盘 ({fen_string})：")
     print_board_text(initial_board)
-    player_name = "红方 (w)" if player == 1 else "黑方 (b)"
-    print(f"当前玩家: {player_name}")
 
-    # 示例: 为红方搜索, 搜索深度为3
-    # 注意: 深度为3可能需要几秒钟, 深度为4或更高会非常慢
-    depth = 3
-    final_score, best_move = search(initial_board, depth=depth, player=player)
+    final_score, best_move = negamax(initial_board, depth, -math.inf, math.inf, player)
 
-    print(f"\n最终评估分数 (从当前玩家角度): {final_score}")
+    print(f"评估分数 (从当前玩家角度): {final_score}，", end="")
+
     if best_move:
         from_pos, to_pos = best_move
         piece = initial_board[from_pos[0]][from_pos[1]]
@@ -129,16 +111,22 @@ if __name__ == "__main__":
         }
         piece_name = piece_map.get(piece, f"Unknown({piece})")
 
-        print(f"最佳着法是: {piece_name} 从 {from_pos} 移动到 {to_pos}")
+        print(f"最佳着法是: {piece_name} 从 {from_pos} 移动到 {to_pos}，", end='')
 
         new_board = apply_move(initial_board, best_move)
 
-        print("\n推荐走法后的棋盘:")
+        print("应用推荐着法后：")
         print_board_text(new_board)
 
         next_player = -player
         new_fen = board_to_fen(new_board, next_player)
-        print(f"\n新棋盘的FEN字符串: {new_fen}")
+        print(f"新棋盘的FEN字符串: {new_fen}")
 
     else:
         print("没有找到最佳着法.")
+
+
+
+if __name__ == "__main__":
+    fen_string = board_to_fen(get_initial_board(), 1)
+    search(fen_string, 3)
