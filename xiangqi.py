@@ -103,39 +103,6 @@ def print_board_text(board):
     print("-----------------------------")
 
 
-def board_to_fen(board, player_to_move):
-    """
-    将棋盘状态转换为FEN字符串。
-    """
-    fen_char_map = {
-        B_KING: 'k', B_GUARD: 'a', B_BISHOP: 'b', B_HORSE: 'n', B_ROOK: 'r', B_CANNON: 'c', B_PAWN: 'p',
-        R_KING: 'K', R_GUARD: 'A', R_BISHOP: 'B', R_HORSE: 'N', R_ROOK: 'R', R_CANNON: 'C', R_PAWN: 'P'
-    }
-    
-    fen = ''
-    for row in board:
-        empty_count = 0
-        for piece in row:
-            if piece == EMPTY:
-                empty_count += 1
-            else:
-                if empty_count > 0:
-                    fen += str(empty_count)
-                    empty_count = 0
-                fen += fen_char_map.get(piece, '')
-        if empty_count > 0:
-            fen += str(empty_count)
-        fen += '/'
-    
-    fen = fen[:-1]
-    
-    side = 'w' if player_to_move == 1 else 'b'
-    
-    fen += f" {side} - - 0 1"
-    
-    return fen
-
-
 def search(board, depth, player):
     """
     开始搜索
@@ -150,17 +117,21 @@ def search(board, depth, player):
 
 
 if __name__ == "__main__":
-    initial_board = board_from_fen(
-        "rCbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/7C1/9/RNBAKABNR b - - 0 1"
-    )
+    fen_string = "rCbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/7C1/9/RNBAKABNR b - - 0 1"
+    initial_board = board_from_fen(fen_string)
 
-    print("初始棋盘:")
+    # Determine player from FEN string
+    player_char = fen_string.split(' ')[1]
+    player = 1 if player_char == 'w' else -1
+
+    print(f"初始棋盘 (FEN: {fen_string}):")
     print_board_text(initial_board)
+    player_name = "红方 (w)" if player == 1 else "黑方 (b)"
+    print(f"当前玩家: {player_name}")
 
     # 示例: 为红方搜索, 搜索深度为3
     # 注意: 深度为3可能需要几秒钟, 深度为4或更高会非常慢
     depth = 3
-    player = 1  # Red is 1, Black is -1
     final_score, best_move = search(initial_board, depth=depth, player=player)
 
     print(f"\n最终评估分数 (从当前玩家角度): {final_score}")
