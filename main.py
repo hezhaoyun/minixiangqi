@@ -104,6 +104,10 @@ def negamax(board, depth, alpha, beta):
 def search(board, depth):
 
     # 清空上一轮搜索的置换表，或者可以根据需要保留
+    # 实测，不清空置换表搜索耗时更短
+    # 从初始局面开始，思考 24步，depth=5 时，搜索耗时 -31%
+    # 每步清空置换表，搜索总耗时：19.08782533
+    # 始终不清空置换表，搜索总耗时：13.12107779
     tt.clear()
 
     return negamax(board, depth, -math.inf, math.inf)
@@ -117,8 +121,8 @@ if __name__ == "__main__":
     print_board_text(game_board)
 
     # 模拟对局
-    for i in range(10):
-        final_score, best_move = search(game_board, 4)
+    for i in range(24):
+        final_score, best_move = search(game_board, 5)
         print(f"\n评估分数 (从当前玩家角度): {final_score}，最佳着法是: {best_move}")
 
         if best_move is None:
