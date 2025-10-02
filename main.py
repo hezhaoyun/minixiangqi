@@ -1,29 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import math
-import copy
 
 from board import *
 from evaluate import evaluate
 from moves_gen import *
 from printer import print_board_text
 
-
-def apply_move(board, move):
-    """
-    执行一个走法, 返回新的棋盘状态
-    :param board: 当前棋盘
-    :param move: 要执行的走法 ((from_r, from_c), (to_r, to_c))
-    :return: 新的棋盘
-    """
-    new_board = copy.deepcopy(board)
-    from_r, from_c = move[0]
-    to_r, to_c = move[1]
-
-    piece = new_board[from_r][from_c]
-    new_board[to_r][to_c] = piece
-    new_board[from_r][from_c] = EMPTY
-    return new_board
 
 # Negamax + α-β剪枝实现
 

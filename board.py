@@ -4,6 +4,8 @@
 中国象棋棋盘
 """
 
+import copy
+
 # 定义棋子常量
 # 黑方 (Black)
 B_KING = -1
@@ -166,12 +168,30 @@ PST = {
 }
 
 
+def apply_move(board, move):
+    """
+    执行一个走法, 返回新的棋盘状态
+    :param board: 当前棋盘
+    :param move: 要执行的走法 ((from_r, from_c), (to_r, to_c))
+    :return: 新的棋盘
+    """
+    new_board = copy.deepcopy(board)
+    from_r, from_c = move[0]
+    to_r, to_c = move[1]
+
+    piece = new_board[from_r][from_c]
+    new_board[to_r][to_c] = piece
+    new_board[from_r][from_c] = EMPTY
+    return new_board
+
+
 def get_initial_board():
     """
     返回中国象棋的初始棋盘布局
     """
     return [
-        [B_ROOK, B_HORSE, B_BISHOP, B_GUARD, B_KING, B_GUARD, B_BISHOP, B_HORSE, B_ROOK],
+        [B_ROOK, B_HORSE, B_BISHOP, B_GUARD, B_KING,
+            B_GUARD, B_BISHOP, B_HORSE, B_ROOK],
         [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
         [EMPTY, B_CANNON, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, B_CANNON, EMPTY],
         [B_PAWN, EMPTY, B_PAWN, EMPTY, B_PAWN, EMPTY, B_PAWN, EMPTY, B_PAWN],
@@ -180,7 +200,8 @@ def get_initial_board():
         [R_PAWN, EMPTY, R_PAWN, EMPTY, R_PAWN, EMPTY, R_PAWN, EMPTY, R_PAWN],
         [EMPTY, R_CANNON, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, R_CANNON, EMPTY],
         [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
-        [R_ROOK, R_HORSE, R_BISHOP, R_GUARD, R_KING, R_GUARD, R_BISHOP, R_HORSE, R_ROOK],
+        [R_ROOK, R_HORSE, R_BISHOP, R_GUARD, R_KING,
+            R_GUARD, R_BISHOP, R_HORSE, R_ROOK],
     ]
 
 
