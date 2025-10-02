@@ -86,6 +86,56 @@ def negamax(board, depth, alpha, beta, player):
     return best_value, best_move
 
 
+def print_board_text(board):
+    """以文本形式打印棋盘,并区分颜色"""
+    piece_map = {
+        B_KING: '將', B_GUARD: '士', B_BISHOP: '象', B_HORSE: '馬', B_ROOK: '車', B_CANNON: '砲', B_PAWN: '卒',
+        R_KING: '帥', R_GUARD: '仕', R_BISHOP: '相', R_HORSE: '傌', R_ROOK: '俥', R_CANNON: '炮', R_PAWN: '兵',
+        EMPTY: '・'
+    }
+    print("\n   0  1  2  3  4  5  6  7  8")
+    print("-----------------------------")
+    for i, row in enumerate(board):
+        row_items = [f"{i}|"]
+        for piece in row:
+            row_items.append(piece_map[piece])
+        print(" ".join(row_items))
+    print("-----------------------------")
+
+
+def board_to_fen(board, player_to_move):
+    """
+    将棋盘状态转换为FEN字符串。
+    """
+    fen_char_map = {
+        B_KING: 'k', B_GUARD: 'a', B_BISHOP: 'b', B_HORSE: 'n', B_ROOK: 'r', B_CANNON: 'c', B_PAWN: 'p',
+        R_KING: 'K', R_GUARD: 'A', R_BISHOP: 'B', R_HORSE: 'N', R_ROOK: 'R', R_CANNON: 'C', R_PAWN: 'P'
+    }
+    
+    fen = ''
+    for row in board:
+        empty_count = 0
+        for piece in row:
+            if piece == EMPTY:
+                empty_count += 1
+            else:
+                if empty_count > 0:
+                    fen += str(empty_count)
+                    empty_count = 0
+                fen += fen_char_map.get(piece, '')
+        if empty_count > 0:
+            fen += str(empty_count)
+        fen += '/'
+    
+    fen = fen[:-1]
+    
+    side = 'w' if player_to_move == 1 else 'b'
+    
+    fen += f" {side} - - 0 1"
+    
+    return fen
+
+
 def search(board, depth, player):
     """
     开始搜索
@@ -96,19 +146,44 @@ def search(board, depth, player):
     print("="*20 + f" 开始为玩家 {player} 搜索 (深度: {depth}) " + "="*20)
     final_score, best_move = negamax(board, depth, -math.inf, math.inf, player)
     print("="*20 + " 搜索结束 " + "="*20)
+    return final_score, best_move
+
+
+if __name__ == "__main__":
+    initial_board = board_from_fen(
+        "rCbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/7C1/9/RNBAKABNR b - - 0 1"
+    )
+
+    print("初始棋盘:")
+    print_board_text(initial_board)
+
+    # 示例: 为红方搜索, 搜索深度为3
+    # 注意: 深度为3可能需要几秒钟, 深度为4或更高会非常慢
+    depth = 3
+    player = 1  # Red is 1, Black is -1
+    final_score, best_move = search(initial_board, depth=depth, player=player)
 
     print(f"\n最终评估分数 (从当前玩家角度): {final_score}")
     if best_move:
         from_pos, to_pos = best_move
-        piece = board[from_pos[0]][from_pos[1]]
-        print(f"最佳着法是: 棋子 {piece} 从 {from_pos} 移动到 {to_pos}")
+        piece = initial_board[from_pos[0]][from_pos[1]]
+
+        piece_map = {
+            B_KING: '將', B_GUARD: '士', B_BISHOP: '象', B_HORSE: '馬', B_ROOK: '車', B_CANNON: '砲', B_PAWN: '卒',
+            R_KING: '帥', R_GUARD: '仕', R_BISHOP: '相', R_HORSE: '傌', R_ROOK: '俥', R_CANNON: '炮', R_PAWN: '兵',
+        }
+        piece_name = piece_map.get(piece, f"Unknown({piece})")
+
+        print(f"最佳着法是: {piece_name} 从 {from_pos} 移动到 {to_pos}")
+
+        new_board = apply_move(initial_board, best_move)
+
+        print("\n推荐走法后的棋盘:")
+        print_board_text(new_board)
+
+        next_player = -player
+        new_fen = board_to_fen(new_board, next_player)
+        print(f"\n新棋盘的FEN字符串: {new_fen}")
+
     else:
         print("没有找到最佳着法.")
-
-
-if __name__ == "__main__":
-    initial_board = board_from_fen("rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1")
-
-    # 示例: 为红方搜索, 搜索深度为3
-    # 注意: 深度为3可能需要几秒钟, 深度为4或更高会非常慢
-    search(initial_board, depth=3, player=PLAYER_R)

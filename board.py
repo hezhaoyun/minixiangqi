@@ -171,7 +171,8 @@ def get_initial_board():
     返回中国象棋的初始棋盘布局
     """
     return [
-        [B_ROOK, B_HORSE, B_BISHOP, B_GUARD, B_KING, B_GUARD, B_BISHOP, B_HORSE, B_ROOK],
+        [B_ROOK, B_HORSE, B_BISHOP, B_GUARD, B_KING,
+            B_GUARD, B_BISHOP, B_HORSE, B_ROOK],
         [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
         [EMPTY, B_CANNON, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, B_CANNON, EMPTY],
         [B_PAWN, EMPTY, B_PAWN, EMPTY, B_PAWN, EMPTY, B_PAWN, EMPTY, B_PAWN],
@@ -180,7 +181,8 @@ def get_initial_board():
         [R_PAWN, EMPTY, R_PAWN, EMPTY, R_PAWN, EMPTY, R_PAWN, EMPTY, R_PAWN],
         [EMPTY, R_CANNON, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, R_CANNON, EMPTY],
         [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
-        [R_ROOK, R_HORSE, R_BISHOP, R_GUARD, R_KING, R_GUARD, R_BISHOP, R_HORSE, R_ROOK],
+        [R_ROOK, R_HORSE, R_BISHOP, R_GUARD, R_KING,
+            R_GUARD, R_BISHOP, R_HORSE, R_ROOK],
     ]
 
 
@@ -196,7 +198,7 @@ def board_from_fen(fen):
         'k': B_KING, 'a': B_GUARD, 'b': B_BISHOP, 'n': B_HORSE, 'r': B_ROOK, 'c': B_CANNON, 'p': B_PAWN,
         'K': R_KING, 'A': R_GUARD, 'B': R_BISHOP, 'N': R_HORSE, 'R': R_ROOK, 'C': R_CANNON, 'P': R_PAWN,
     }
-    
+
     board = []
     fen_board = fen.split(' ')[0]
     rows = fen_board.split('/')
@@ -210,3 +212,36 @@ def board_from_fen(fen):
                 row.append(fen_map.get(char, EMPTY))
         board.append(row)
     return board
+
+
+def board_to_fen(board, player_to_move):
+    """
+    将棋盘状态转换为FEN字符串。
+    """
+    fen_char_map = {
+        B_KING: 'k', B_GUARD: 'a', B_BISHOP: 'b', B_HORSE: 'n', B_ROOK: 'r', B_CANNON: 'c', B_PAWN: 'p',
+        R_KING: 'K', R_GUARD: 'A', R_BISHOP: 'B', R_HORSE: 'N', R_ROOK: 'R', R_CANNON: 'C', R_PAWN: 'P'
+    }
+
+    fen = ''
+    for row in board:
+        empty_count = 0
+        for piece in row:
+            if piece == EMPTY:
+                empty_count += 1
+            else:
+                if empty_count > 0:
+                    fen += str(empty_count)
+                    empty_count = 0
+                fen += fen_char_map.get(piece, '')
+        if empty_count > 0:
+            fen += str(empty_count)
+        fen += '/'
+
+    fen = fen[:-1]
+
+    side = 'w' if player_to_move == 1 else 'b'
+
+    fen += f" {side} - - 0 1"
+
+    return fen
