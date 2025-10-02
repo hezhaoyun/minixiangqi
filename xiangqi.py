@@ -6,6 +6,7 @@ import copy
 from board import *
 from evaluate import evaluate
 from moves_gen import *
+from printer import print_board_text
 
 
 def apply_move(board, move):
@@ -84,23 +85,6 @@ def negamax(board, depth, alpha, beta, player):
             break  # 剪枝
 
     return best_value, best_move
-
-
-def print_board_text(board):
-    """以文本形式打印棋盘,并区分颜色"""
-    piece_map = {
-        B_KING: '將', B_GUARD: '士', B_BISHOP: '象', B_HORSE: '馬', B_ROOK: '車', B_CANNON: '砲', B_PAWN: '卒',
-        R_KING: '帥', R_GUARD: '仕', R_BISHOP: '相', R_HORSE: '傌', R_ROOK: '俥', R_CANNON: '炮', R_PAWN: '兵',
-        EMPTY: '・'
-    }
-    print("\n   0  1  2  3  4  5  6  7  8")
-    print("-----------------------------")
-    for i, row in enumerate(board):
-        row_items = [f"{i}|"]
-        for piece in row:
-            row_items.append(piece_map[piece])
-        print(" ".join(row_items))
-    print("-----------------------------")
 
 
 def search(board, depth, player):
