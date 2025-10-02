@@ -4,7 +4,7 @@ import math
 from board import *
 from evaluate import evaluate
 from moves_gen import generate_moves, order_moves
-from tools import print_board_text
+from tools import print_board_text, print_search_result
 
 # --- 置换表 (Transposition Table) ---
 # 使用一个简单的字典作为置换表
@@ -29,14 +29,14 @@ def negamax(board, depth, alpha, beta):
     if tt_entry and tt_entry['depth'] >= depth:
         score = tt_entry['score']
         flag = tt_entry['flag']
-        
+
         if flag == TT_EXACT:
             return score, tt_entry['best_move']
         elif flag == TT_LOWER:
             alpha = max(alpha, score)
         elif flag == TT_UPPER:
             beta = min(beta, score)
-        
+
         if alpha >= beta:
             return score, tt_entry['best_move']
 
@@ -56,16 +56,16 @@ def negamax(board, depth, alpha, beta):
         return -math.inf, None
 
     # 追踪是否已经搜索过PV节点
-    is_pv_node = True 
+    is_pv_node = True
 
     for move in ordered_moves:
         # 做出走法
         captured_piece = board.make_move(move)
-        
+
         # 递归调用, 注意参数的变化
         child_value, _ = negamax(board, depth - 1, -beta, -alpha)
         current_score = -child_value
-        
+
         # 撤销走法
         board.unmake_move(move, captured_piece)
 
@@ -82,10 +82,10 @@ def negamax(board, depth, alpha, beta):
     # --- 4. 置换表存储 ---
     flag = TT_EXACT
     if best_value <= original_alpha:
-        flag = TT_UPPER # Fail-Low, 得到的是上限
+        flag = TT_UPPER  # Fail-Low, 得到的是上限
     elif best_value >= beta:
-        flag = TT_LOWER # Fail-High, 得到的是下限
-    
+        flag = TT_LOWER  # Fail-High, 得到的是下限
+
     transposition_table[board.hash_key] = {
         'depth': depth,
         'score': best_value,
@@ -108,29 +108,9 @@ def search(fen_string, depth, show_init_board=False):
 
     final_score, best_move = negamax(board_obj, depth, -math.inf, math.inf)
 
-    print(f"评估分数 (从当前玩家角度): {final_score}，", end="")
+    print_search_result(final_score, best_move, board_obj)
 
-    if best_move:
-        from_pos, to_pos = best_move
-        piece = board_obj.board[from_pos[0]][from_pos[1]]
-
-        piece_map = {
-            B_KING: '將', B_GUARD: '士', B_BISHOP: '象', B_HORSE: '馬', B_ROOK: '車', B_CANNON: '砲', B_PAWN: '卒',
-            R_KING: '帥', R_GUARD: '仕', R_BISHOP: '相', R_HORSE: '傌', R_ROOK: '俥', R_CANNON: '炮', R_PAWN: '兵',
-        }
-        piece_name = piece_map.get(piece, f"Unknown({piece})")
-
-        print(f"最佳着法是: {piece_name} 从 {from_pos} 移动到 {to_pos}，", end='')
-
-        board_obj.make_move(best_move)
-
-        print("应用推荐着法后：")
-        print_board_text(board_obj.board)
-
-        return board_obj.to_fen()
-
-    print("没有找到最佳着法.")
-    return None
+    return board_obj.to_fen() if best_move else None
 
 
 if __name__ == "__main__":
@@ -139,7 +119,8 @@ if __name__ == "__main__":
     init_fen = board.to_fen()
 
     for s in range(6):
-        result_fen = search(init_fen, 4, show_init_board=(s == 0)) # 增加一点深度以体现性能
+        result_fen = search(
+            init_fen, 4, show_init_board=(s == 0))  # 增加一点深度以体现性能
         if result_fen is None:
             print("对局结束")
             break
