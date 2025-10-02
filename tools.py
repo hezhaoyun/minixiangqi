@@ -18,7 +18,7 @@ def print_board_text(board):
     print("\n   0  1  2  3  4  5  6  7  8")
     print("-----------------------------")
 
-    for i, row in enumerate(board):
+    for i, row in enumerate(board.board):
         row_items = [f"{i}|"]
 
         for piece in row:
@@ -33,28 +33,3 @@ def print_board_text(board):
         print(" ".join(row_items))
 
     print("-----------------------------")
-
-
-def print_search_result(final_score, best_move, board_obj):
-
-    print(f"\n评估分数 (从当前玩家角度): {final_score}，", end="")
-
-    if best_move:
-        from_pos, to_pos = best_move
-        piece = board_obj.board[from_pos[0]][from_pos[1]]
-
-        piece_map = {
-            B_KING: '將', B_GUARD: '士', B_BISHOP: '象', B_HORSE: '馬', B_ROOK: '車', B_CANNON: '砲', B_PAWN: '卒',
-            R_KING: '帥', R_GUARD: '仕', R_BISHOP: '相', R_HORSE: '傌', R_ROOK: '俥', R_CANNON: '炮', R_PAWN: '兵',
-        }
-        piece_name = piece_map.get(piece, f"Unknown({piece})")
-
-        print(f"最佳着法是: {piece_name} 从 {from_pos} 移动到 {to_pos}，", end='')
-
-        board_obj.make_move(best_move)
-
-        print("应用推荐着法后：")
-        print_board_text(board_obj.board)
-
-    else:
-        print("没有找到最佳着法.")

@@ -43,7 +43,8 @@ class Board:
             self.board = self._get_initial_board()
             self.player = 1  # Red starts
 
-        self.hash_key = self._calculate_initial_hash()
+            self.hash_key = self._calculate_initial_hash()
+            self.history = [self.hash_key]  # 跟踪历史局面
 
     def _get_initial_board(self):
         return [
@@ -151,9 +152,15 @@ class Board:
         # Update player
         self.player *= -1
 
+        # 记录历史
+        self.history.append(self.hash_key)
+
         return captured_piece
 
     def unmake_move(self, move, captured_piece):
+        # 撤销历史记录
+        self.history.pop()
+
         from_r, from_c = move[0]
         to_r, to_c = move[1]
 

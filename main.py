@@ -4,7 +4,7 @@ import math
 from board import *
 from evaluate import evaluate
 from moves_gen import generate_moves, order_moves
-from tools import print_board_text, print_search_result
+from tools import print_board_text
 
 # --- 置换表 (Transposition Table) ---
 # 使用一个简单的字典作为置换表
@@ -61,13 +61,19 @@ def negamax(board, depth, alpha, beta):
         # 做出走法
         captured_piece = board.make_move(move)
 
-        # 递归调用, 注意参数的变化
-        child_value, _ = negamax(board, depth - 1, -beta, -alpha)
-        current_score = -child_value
+        # --- 重复局面检测 ---
+        # 如果一个局面在历史中出现过（算上当前这次至少2次），则认为是和棋
+        # 注意：更严格的规则是三次重复，但两次重复已经有强烈的和棋倾向
+        # 在搜索中，我们将其视为和棋(0分)，以避开或寻求和棋
+        if board.history.count(board.hash_key) > 1:
+            current_score = 0
+        else:
+            # 递归调用, 注意参数的变化
+            child_value, _ = negamax(board, depth - 1, -beta, -alpha)
+            current_score = -child_value
 
         # 撤销走法
         board.unmake_move(move, captured_piece)
-
         # 更新最佳分数和最佳着法
         if current_score > best_value:
             best_value = current_score
@@ -95,31 +101,29 @@ def negamax(board, depth, alpha, beta):
     return best_value, best_move
 
 
-def search(fen_string, depth, show_init_board=False):
-    board_obj = Board(fen=fen_string)
-
-    if show_init_board:
-        print(f"初始棋盘 ({fen_string})：")
-        print_board_text(board_obj.board)
+def search(board, depth):
 
     # 清空上一轮搜索的置换表，或者可以根据需要保留
     tt.clear()
 
-    final_score, best_move = negamax(board_obj, depth, -math.inf, math.inf)
-    print_search_result(final_score, best_move, board_obj)
-
-    return board_obj.to_fen() if best_move else None
+    return negamax(board, depth, -math.inf, math.inf)
 
 
 if __name__ == "__main__":
-    # 从初始局面开始
-    board = Board()
-    init_fen = board.to_fen()
+    # 创建一个贯穿整局游戏的棋盘对象
+    game_board = Board()
 
-    for s in range(16):
-        result_fen = search(
-            init_fen, 4, show_init_board=(s == 0))  # 增加一点深度以体现性能
-        if result_fen is None:
-            print("对局结束")
+    # 打印开始局面
+    print_board_text(game_board)
+
+    # 模拟对局
+    for i in range(10):
+        final_score, best_move = search(game_board, 4)
+        print(f"\n评估分数 (从当前玩家角度): {final_score}，最佳着法是: {best_move}")
+
+        if best_move is None:
             break
-        init_fen = result_fen
+
+        # 将最佳着法应用到主棋盘上，保留历史记录
+        game_board.make_move(best_move)
+        print_board_text(game_board)
