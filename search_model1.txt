@@ -1,0 +1,71 @@
+==================== 开始搜索 ====================
+进入节点 root, depth=0, alpha=-inf, beta=inf
+  初始化 best_value = -inf, best_move = None
+  - 探索子节点: A
+  进入节点 A, depth=1, alpha=-inf, beta=inf
+    初始化 best_value = -inf, best_move = None
+    - 探索子节点: A1
+    进入节点 A1, depth=2, alpha=-inf, beta=inf
+      初始化 best_value = -inf, best_move = None
+      - 探索子节点: A1a
+      进入节点 A1a, depth=3, alpha=-inf, beta=inf
+        -> 叶子节点 A1a, 原始分=3, 调整后得分=-3
+        子节点 A1a 的返回分(对手角度)=-3, 取反后(我方角度)=3
+        更新! 3 > -inf. 新 best_value=3, best_move=A1a
+        更新 alpha: max(-inf, 3) -> 3
+      - 探索子节点: A1b
+      进入节点 A1b, depth=3, alpha=-inf, beta=-3
+        -> 叶子节点 A1b, 原始分=5, 调整后得分=-5
+        子节点 A1b 的返回分(对手角度)=-5, 取反后(我方角度)=5
+        更新! 5 > 3. 新 best_value=5, best_move=A1b
+        更新 alpha: max(3, 5) -> 5
+    节点 A1 返回 best_value=5, best_move=A1b
+      子节点 A1 的返回分(对手角度)=5, 取反后(我方角度)=-5
+      更新! -5 > -inf. 新 best_value=-5, best_move=A1
+      更新 alpha: max(-inf, -5) -> -5
+    - 探索子节点: A2
+    进入节点 A2, depth=2, alpha=-inf, beta=5
+      初始化 best_value = -inf, best_move = None
+      - 探索子节点: A2a
+      进入节点 A2a, depth=3, alpha=-5, beta=inf
+        -> 叶子节点 A2a, 原始分=6, 调整后得分=-6
+        子节点 A2a 的返回分(对手角度)=-6, 取反后(我方角度)=6
+        更新! 6 > -inf. 新 best_value=6, best_move=A2a
+        更新 alpha: max(-inf, 6) -> 6
+        !!剪枝!! alpha (6) >= beta (5). 停止探索 A2 的其他子节点.
+    节点 A2 返回 best_value=6, best_move=A2a
+      子节点 A2 的返回分(对手角度)=6, 取反后(我方角度)=-6
+      不更新. -6 <= -5
+  节点 A 返回 best_value=-5, best_move=A1
+    子节点 A 的返回分(对手角度)=-5, 取反后(我方角度)=5
+    更新! 5 > -inf. 新 best_value=5, best_move=A
+    更新 alpha: max(-inf, 5) -> 5
+  - 探索子节点: B
+  进入节点 B, depth=1, alpha=-inf, beta=-5
+    初始化 best_value = -inf, best_move = None
+    - 探索子节点: B1
+    进入节点 B1, depth=2, alpha=5, beta=inf
+      初始化 best_value = -inf, best_move = None
+      - 探索子节点: B1a
+      进入节点 B1a, depth=3, alpha=-inf, beta=-5
+        -> 叶子节点 B1a, 原始分=2, 调整后得分=-2
+        子节点 B1a 的返回分(对手角度)=-2, 取反后(我方角度)=2
+        更新! 2 > -inf. 新 best_value=2, best_move=B1a
+      - 探索子节点: B1b
+      进入节点 B1b, depth=3, alpha=-inf, beta=-5
+        -> 叶子节点 B1b, 原始分=1, 调整后得分=-1
+        子节点 B1b 的返回分(对手角度)=-1, 取反后(我方角度)=1
+        不更新. 1 <= 2
+    节点 B1 返回 best_value=2, best_move=B1a
+      子节点 B1 的返回分(对手角度)=2, 取反后(我方角度)=-2
+      更新! -2 > -inf. 新 best_value=-2, best_move=B1
+      更新 alpha: max(-inf, -2) -> -2
+      !!剪枝!! alpha (-2) >= beta (-5). 停止探索 B 的其他子节点.
+  节点 B 返回 best_value=-2, best_move=B1
+    子节点 B 的返回分(对手角度)=-2, 取反后(我方角度)=2
+    不更新. 2 <= 5
+节点 root 返回 best_value=5, best_move=A
+==================== 搜索结束 ====================
+
+最终评估分数 (从我方角度): 5
+最佳着法是: A
