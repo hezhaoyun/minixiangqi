@@ -5,7 +5,7 @@ import math
 from board import *
 from evaluate import evaluate
 from moves_gen import *
-from printer import print_board_text
+from tools import print_board_text
 
 
 # Negamax + α-β剪枝实现
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     init_fen = board_to_fen(get_initial_board(), 1)
 
     for s in range(6):
-        result_fen = search(init_fen, 4, show_init_board=(s == 0))
+        result_fen = search(init_fen, 3, show_init_board=(s == 0))
         if result_fen is None:
             break
 
