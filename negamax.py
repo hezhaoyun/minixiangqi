@@ -1,7 +1,6 @@
 import math
 
-from model1 import model1
-from model2 import model2
+from model import model1, model2, model3, model4
 
 
 # Negamax + α-β剪枝实现
@@ -71,8 +70,7 @@ def negamax(node, alpha, beta, depth=0):
     return best_value, best_move
 
 
-def search():
-    root = model1()
+def search(root):
     print("="*20 + " 开始搜索 " + "="*20)
     final_score, best_move = negamax(root, -math.inf, math.inf, depth=0)
     print("="*20 + " 搜索结束 " + "="*20)
@@ -82,4 +80,7 @@ def search():
 
 
 if __name__ == "__main__":
-    search()
+    search(model1())
+    # search(model2())
+    # search(model3())
+    # search(model4())
