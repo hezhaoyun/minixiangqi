@@ -8,14 +8,12 @@ from tools import print_board_text, print_search_result
 
 # --- 置换表 (Transposition Table) ---
 # 使用一个简单的字典作为置换表
-transposition_table = {}
+tt = {}
 
 # 置换表条目的标志
 TT_EXACT = 0  # 精确值 (PV-Node)
 TT_LOWER = 1  # Alpha值 (Fail-High)
 TT_UPPER = 2  # Beta值 (Fail-Low)
-
-# -------------------------------------
 
 
 def negamax(board, depth, alpha, beta):
@@ -24,7 +22,7 @@ def negamax(board, depth, alpha, beta):
     """
     # --- 1. 置换表查询 ---
     original_alpha = alpha
-    tt_entry = transposition_table.get(board.hash_key)
+    tt_entry = tt.get(board.hash_key)
 
     if tt_entry and tt_entry['depth'] >= depth:
         score = tt_entry['score']
@@ -46,9 +44,10 @@ def negamax(board, depth, alpha, beta):
         return score, None
 
     # --- 3. 遍历所有子节点 ---
-    best_value = -math.inf
-    best_move = None
+    best_value, best_move = -math.inf, None
+
     best_move_from_tt = tt_entry.get('best_move') if tt_entry else None
+
     moves = generate_moves(board.board, board.player)
     ordered_moves = order_moves(board.board, moves, best_move_from_tt)
 
@@ -86,7 +85,7 @@ def negamax(board, depth, alpha, beta):
     elif best_value >= beta:
         flag = TT_LOWER  # Fail-High, 得到的是下限
 
-    transposition_table[board.hash_key] = {
+    tt[board.hash_key] = {
         'depth': depth,
         'score': best_value,
         'flag': flag,
@@ -104,10 +103,9 @@ def search(fen_string, depth, show_init_board=False):
         print_board_text(board_obj.board)
 
     # 清空上一轮搜索的置换表，或者可以根据需要保留
-    transposition_table.clear()
+    tt.clear()
 
     final_score, best_move = negamax(board_obj, depth, -math.inf, math.inf)
-
     print_search_result(final_score, best_move, board_obj)
 
     return board_obj.to_fen() if best_move else None

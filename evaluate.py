@@ -14,6 +14,7 @@ def evaluate(board):
     :return: 局面的评估分数, 正数表示红方优势, 负数表示黑方优势
     """
     score = 0
+
     for r in range(10):
         for c in range(9):
             piece = board[r][c]
@@ -27,6 +28,7 @@ def evaluate(board):
                     score += PST[piece][9 - r][8 - c]
                 else:  # 黑方
                     score -= PST[piece][r][c]
+
     return score
 
 

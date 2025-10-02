@@ -7,22 +7,9 @@ from zobrist import zobrist_keys, zobrist_player
 
 # 定义棋子常量
 # 黑方 (Black)
-B_KING = -1
-B_GUARD = -2
-B_BISHOP = -3
-B_HORSE = -4
-B_ROOK = -5
-B_CANNON = -6
-B_PAWN = -7
-
+B_KING, B_GUARD, B_BISHOP, B_HORSE, B_ROOK, B_CANNON, B_PAWN = -1, -2, -3, -4, -5, -6, -7
 # 红方 (Red)
-R_KING = 1
-R_GUARD = 2
-R_BISHOP = 3
-R_HORSE = 4
-R_ROOK = 5
-R_CANNON = 6
-R_PAWN = 7
+R_KING, R_GUARD, R_BISHOP, R_HORSE, R_ROOK, R_CANNON, R_PAWN = 1, 2, 3, 4, 5, 6, 7
 
 # 空白位置
 EMPTY = 0
@@ -34,15 +21,19 @@ PIECE_VALUES = {
     EMPTY: 0
 }
 
-# 棋子到Zobrist数组索引的映射
-# B_KING(-1) -> 0, B_GUARD(-2) -> 1, ..., B_PAWN(-7) -> 6
-# R_KING(1) -> 7, R_GUARD(2) -> 8, ..., R_PAWN(7) -> 13
+
 def piece_to_zobrist_idx(piece):
+    # 棋子到Zobrist数组索引的映射
+    # B_KING(-1) -> 0, B_GUARD(-2) -> 1, ..., B_PAWN(-7) -> 6
+    # R_KING(1) -> 7, R_GUARD(2) -> 8, ..., R_PAWN(7) -> 13
+
     if piece < 0:
         return abs(piece) - 1
     elif piece > 0:
         return piece + 6
-    return -1 # Should not happen for actual pieces
+
+    return -1  # Should not happen for actual pieces
+
 
 class Board:
     def __init__(self, fen=None):
@@ -51,7 +42,7 @@ class Board:
         else:
             self.board = self._get_initial_board()
             self.player = 1  # Red starts
-        
+
         self.hash_key = self._calculate_initial_hash()
 
     def _get_initial_board(self):
@@ -87,7 +78,7 @@ class Board:
                 else:
                     row.append(fen_map.get(char, EMPTY))
             board.append(row)
-        
+
         player = 1 if player_char == 'w' else -1
         return board, player
 
@@ -117,14 +108,17 @@ class Board:
 
     def _calculate_initial_hash(self):
         h = 0
+
         for r in range(10):
             for c in range(9):
                 piece = self.board[r][c]
                 if piece != EMPTY:
                     idx = piece_to_zobrist_idx(piece)
                     h ^= zobrist_keys[idx][r][c]
-        if self.player == -1: # If black to move
+
+        if self.player == -1:  # If black to move
             h ^= zobrist_player
+
         return h
 
     def make_move(self, move):
@@ -146,23 +140,23 @@ class Board:
 
         # 3. XOR in the moving piece at its new position
         self.hash_key ^= zobrist_keys[moving_idx][to_r][to_c]
-        
+
         # 4. Flip side to move
         self.hash_key ^= zobrist_player
 
         # Update board state
         self.board[to_r][to_c] = moving_piece
         self.board[from_r][from_c] = EMPTY
-        
+
         # Update player
         self.player *= -1
-        
+
         return captured_piece
 
     def unmake_move(self, move, captured_piece):
         from_r, from_c = move[0]
         to_r, to_c = move[1]
-        
+
         moving_piece = self.board[to_r][to_c]
 
         # The hash key update is the same as make_move, because XORing twice restores the original value
@@ -184,12 +178,13 @@ class Board:
         # Restore board state
         self.board[from_r][from_c] = moving_piece
         self.board[to_r][to_c] = captured_piece
-        
+
         # Restore player
         self.player *= -1
 
 # --- PST tables and other constants remain the same ---
 # (For brevity, they are omitted here but should be kept in the file)
+
 
 # 将/帅
 KING_PST = [
