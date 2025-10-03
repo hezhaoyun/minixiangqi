@@ -42,10 +42,10 @@ class Engine:
             if score >= beta:
                 # 返回一个下界值, 因为实际值可能更高
                 return score, None
-            
+
             if score > alpha:
                 alpha = score
-        
+
         return alpha, None
 
     def _negamax(self, board: b.Board, depth: int, alpha: float, beta: float) -> Tuple[float, Optional[b.Move]]:
@@ -127,6 +127,22 @@ class Engine:
         return best_value, best_move
 
     def search(self, board: b.Board, depth: int) -> Tuple[float, Optional[b.Move]]:
-        # 考虑是否需要清空置换表
-        # self.tt.clear()
-        return self._negamax(board, depth, -math.inf, math.inf)
+        """
+        执行迭代深化搜索.
+        从深度1开始, 迭代搜索到指定的深度.
+        这样可以更好地利用置换表, 并允许未来的时间控制.
+        """
+        self.tt.clear()
+
+        best_move = None
+        final_score = -math.inf
+
+        for i in range(1, depth + 1):
+            score, move = self._negamax(board, i, -math.inf, math.inf)
+
+            # 只有在搜索成功返回一个有效走法时才更新最佳走法
+            if move:
+                best_move = move
+            final_score = score
+
+        return final_score, best_move
