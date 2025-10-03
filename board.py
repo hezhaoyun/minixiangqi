@@ -15,6 +15,11 @@ Move = Tuple[Tuple[int, int], Tuple[int, int]]
 BoardState = List[List[int]]
 
 
+def get_player(piece: int) -> int:
+    """根据棋子判断玩家"""
+    return PLAYER_R if piece > 0 else PLAYER_B
+
+
 def piece_to_zobrist_idx(piece: int) -> int:
     """
     棋子到Zobrist数组索引的映射
@@ -36,8 +41,18 @@ class Board:
             self.board: BoardState = self._get_initial_board()
             self.player: int = PLAYER_R  # Red starts
 
+        self._initialize_piece_list()
         self.hash_key: int = self._calculate_initial_hash()
         self.history: List[int] = [self.hash_key]  # 跟踪历史局面
+
+    def _initialize_piece_list(self):
+        self.piece_list = {PLAYER_R: [], PLAYER_B: []}
+        for r in range(10):
+            for c in range(9):
+                piece = self.board[r][c]
+                if piece != EMPTY:
+                    player = get_player(piece)
+                    self.piece_list[player].append((r, c))
 
     def _get_initial_board(self) -> BoardState:
         return [
@@ -119,6 +134,14 @@ class Board:
 
         moving_piece = self.board[from_r][from_c]
         captured_piece = self.board[to_r][to_c]
+        moving_player = get_player(moving_piece)
+
+        # Update piece list
+        self.piece_list[moving_player].remove((from_r, from_c))
+        self.piece_list[moving_player].append((to_r, to_c))
+        if captured_piece != EMPTY:
+            captured_player = get_player(captured_piece)
+            self.piece_list[captured_player].remove((to_r, to_c))
 
         # Update hash key
         moving_idx = piece_to_zobrist_idx(moving_piece)
@@ -145,6 +168,14 @@ class Board:
         from_r, from_c = move[0]
         to_r, to_c = move[1]
         moving_piece = self.board[to_r][to_c]
+        moving_player = get_player(moving_piece)
+
+        # Restore piece list
+        self.piece_list[moving_player].remove((to_r, to_c))
+        self.piece_list[moving_player].append((from_r, from_c))
+        if captured_piece != EMPTY:
+            captured_player = get_player(captured_piece)
+            self.piece_list[captured_player].append((to_r, to_c))
 
         # XORing twice restores the original value
         self.hash_key ^= zobrist.zobrist_player

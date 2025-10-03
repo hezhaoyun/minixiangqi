@@ -90,5 +90,6 @@ class Engine:
         return best_value, best_move
 
     def search(self, board: b.Board, depth: int) -> Tuple[float, Optional[b.Move]]:
-        self.tt.clear()
+        # 考虑是否需要清空置换表
+        # self.tt.clear()
         return self._negamax(board, depth, -math.inf, math.inf)

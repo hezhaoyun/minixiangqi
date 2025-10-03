@@ -8,15 +8,11 @@ from typing import List, Optional
 
 import board as b
 import evaluate
+from board import get_player
 from constants import (
     EMPTY, PLAYER_B, PLAYER_R, R_BISHOP, R_CANNON, R_GUARD, R_HORSE, R_KING,
     R_PAWN, R_ROOK
 )
-
-
-def get_player(piece: int) -> int:
-    """根据棋子判断玩家"""
-    return PLAYER_R if piece > 0 else PLAYER_B
 
 
 def is_valid_pos(r: int, c: int) -> bool:
@@ -34,11 +30,8 @@ def generate_moves(board: b.Board) -> List[b.Move]:
     board_state = board.board
     player = board.player
 
-    for r in range(10):
-        for c in range(9):
-            piece = board_state[r][c]
-            if piece != EMPTY and get_player(piece) == player:
-                moves.extend(get_piece_moves(board_state, r, c))
+    for r, c in board.piece_list[player]:
+        moves.extend(get_piece_moves(board_state, r, c))
 
     return moves
 
