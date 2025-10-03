@@ -45,6 +45,19 @@ class Board:
         self.hash_key: int = self._calculate_initial_hash()
         self.history: List[int] = [self.hash_key]  # 跟踪历史局面
 
+    def copy(self):
+        """创建并返回当前局面的一个深拷贝."""
+        new_b = object.__new__(Board)  # 创建一个空对象,避免调用__init__
+        new_b.board = [row[:] for row in self.board]
+        new_b.player = self.player
+        new_b.piece_list = {
+            PLAYER_R: self.piece_list[PLAYER_R][:],
+            PLAYER_B: self.piece_list[PLAYER_B][:]
+        }
+        new_b.hash_key = self.hash_key
+        new_b.history = self.history[:]
+        return new_b
+
     def _initialize_piece_list(self):
         self.piece_list = {PLAYER_R: [], PLAYER_B: []}
         for r in range(10):
