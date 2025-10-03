@@ -123,17 +123,18 @@ def evaluate(current_board: board.Board) -> int:
     score = 0
     board_state = current_board.board
 
-    for r in range(10):
-        for c in range(9):
-            piece = board_state[r][c]
-            if piece != EMPTY:
-                score += PIECE_VALUES[piece]
-                # 加上棋子的位置价值
-                if piece > 0:  # 红方
-                    # 红方PST需要垂直翻转
-                    score += PST[piece][9 - r][8 - c]
-                else:  # 黑方
-                    score -= PST[piece][r][c]
+    # 通过遍历 piece_list 来优化, 而不是遍历整个棋盘
+    # 红方
+    for r, c in current_board.piece_list[board.PLAYER_R]:
+        piece = board_state[r][c]
+        score += PIECE_VALUES[piece]
+        score += PST[piece][9 - r][8 - c]
+
+    # 黑方
+    for r, c in current_board.piece_list[board.PLAYER_B]:
+        piece = board_state[r][c]
+        score += PIECE_VALUES[piece]
+        score -= PST[piece][r][c]
 
     return score
 
@@ -145,9 +146,9 @@ if __name__ == '__main__':
 
     print("初始局面评估分数:", initial_score)
 
-    # 示例: 红方拿掉黑方一个车
+    # 示例: 红方开局左炮打马后评估分数
     board_without_b_rook = board.Board()
-    board_without_b_rook.board[0][0] = EMPTY
+    board_without_b_rook.make_move(((7, 1), (0, 1)))
     score_after_capture = evaluate(board_without_b_rook)
 
-    print("红方拿掉黑方一个车后的评估分数:", score_after_capture)
+    print("红方开局左炮打马后评估分数:", score_after_capture)

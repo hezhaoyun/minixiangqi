@@ -6,7 +6,7 @@ from tools import print_board_text
 def main():
     """主函数, 模拟对局"""
 
-    TIME_LIMIT_SECONDS = 3.0  # 每一步的思考时间
+    TIME_LIMIT_SECONDS = 2.0  # 每一步的思考时间
     SIMULATE_STEPS = 24
 
     game_board = Board()

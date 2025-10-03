@@ -58,10 +58,10 @@ class Engine:
 
             if score >= beta:
                 return score, None
-            
+
             if score > alpha:
                 alpha = score
-        
+
         return alpha, None
 
     def _negamax(self, board: b.Board, depth: int, alpha: float, beta: float) -> Tuple[float, Optional[b.Move]]:
@@ -139,7 +139,7 @@ class Engine:
 
         return best_value, best_move
 
-    def search(self, board: b.Board, depth: int) -> Tuple[float, Optional[b.Move]]:
+    def search_by_depth(self, board: b.Board, depth: int) -> Tuple[float, Optional[b.Move]]:
         """
         执行迭代深化搜索.
         从深度1开始, 迭代搜索到指定的深度.
@@ -152,7 +152,7 @@ class Engine:
 
         for i in range(1, depth + 1):
             score, move = self._negamax(board_copy, i, -math.inf, math.inf)
-            
+
             if move:
                 best_move = move
             final_score = score
@@ -168,14 +168,14 @@ class Engine:
         self.start_time = time.time()
         self.time_limit = time_limit_seconds
         self.nodes_searched = 0
-        
+
         last_completed_score = -math.inf
         last_completed_move = None
-        
+
         try:
             for i in range(1, 64):
                 current_score, current_move = self._negamax(board_copy, i, -math.inf, math.inf)
-                
+
                 last_completed_score = current_score
                 last_completed_move = current_move
 
