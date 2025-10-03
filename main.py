@@ -19,7 +19,7 @@ def main():
             break
 
         game_board.make_move(best_move)
-        print_board_text(game_board)
+        print_board_text(game_board, best_move)
 
 
 if __name__ == "__main__":
