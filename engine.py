@@ -19,6 +19,35 @@ class Engine:
         # 使用一个字典作为置换表
         self.tt: Dict = {}
 
+    def _quiescence_search(self, board: b.Board, alpha: float, beta: float) -> Tuple[float, Optional[b.Move]]:
+        """
+        静态搜索, 用于处理不稳定的局面 (主要指吃子), 以避免地平线效应.
+        """
+        stand_pat_score = evaluate.evaluate(board) * board.player
+
+        if stand_pat_score >= beta:
+            return stand_pat_score, None
+
+        alpha = max(alpha, stand_pat_score)
+
+        capture_moves = moves_gen.generate_capture_moves(board)
+        ordered_moves = moves_gen.order_moves(board.board, capture_moves, None)
+
+        for move in ordered_moves:
+            captured_piece = board.make_move(move)
+            score, _ = self._quiescence_search(board, -beta, -alpha)
+            score = -score
+            board.unmake_move(move, captured_piece)
+
+            if score >= beta:
+                # 返回一个下界值, 因为实际值可能更高
+                return score, None
+            
+            if score > alpha:
+                alpha = score
+        
+        return alpha, None
+
     def _negamax(self, board: b.Board, depth: int, alpha: float, beta: float) -> Tuple[float, Optional[b.Move]]:
         """
         使用 Negamax 算法结合 Alpha-Beta 剪枝和置换表来搜索. 
@@ -42,8 +71,7 @@ class Engine:
                 return score, best_move
 
         if depth == 0:
-            score = evaluate.evaluate(board) * board.player
-            return score, None
+            return self._quiescence_search(board, alpha, beta)
 
         best_value, best_move = -math.inf, None
         best_move_from_tt = tt_entry.get('best_move') if tt_entry else None
@@ -52,13 +80,16 @@ class Engine:
         ordered_moves = moves_gen.order_moves(board.board, moves, best_move_from_tt)
 
         if not ordered_moves:
+            # 如果没有合法走法, 意味着被将死或困毙
+            # 对于被将死的情况, 返回一个极小值
             return -math.inf, None
 
         for move in ordered_moves:
             captured_piece = board.make_move(move)
 
+            # 检查重复局面, 避免无限循环
             if board.history.count(board.hash_key) > 1:
-                current_score = 0
+                current_score = 0  # 和棋分数为0
             else:
                 child_value, _ = self._negamax(board, depth - 1, -beta, -alpha)
                 current_score = -child_value
@@ -74,6 +105,12 @@ class Engine:
             if alpha >= beta:
                 break
 
+        # 如果没有找到任何大于-inf的走法 (比如所有走法都导致重复局面),
+        # best_value 可能是-inf, 此时不应存入置换表
+        if best_value == -math.inf:
+            return -math.inf, None
+
+        # 存入置换表
         flag = TT_EXACT
         if best_value <= original_alpha:
             flag = TT_UPPER

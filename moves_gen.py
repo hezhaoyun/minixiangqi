@@ -253,6 +253,23 @@ def order_moves(board_state: b.BoardState, moves: List[b.Move], best_move_from_t
     return sorted(moves, key=lambda m: move_scores[m], reverse=True)
 
 
+def generate_capture_moves(board: b.Board) -> List[b.Move]:
+    """
+    为指定玩家生成所有只吃子的走法
+    """
+    capture_moves = []
+    board_state = board.board
+
+    for r, c in board.piece_list[board.player]:
+        piece_moves = get_piece_moves(board_state, r, c)
+        for move in piece_moves:
+            to_r, to_c = move[1]
+            if board_state[to_r][to_c] != EMPTY:
+                capture_moves.append(move)
+    
+    return capture_moves
+
+
 if __name__ == '__main__':
     initial_board = b.Board()
     red_moves = generate_moves(initial_board)
