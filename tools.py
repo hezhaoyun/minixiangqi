@@ -1,7 +1,13 @@
-from board import *
+# -*- coding: utf-8 -*-
+
+import board as b
+from constants import (
+    EMPTY, B_KING, B_GUARD, B_BISHOP, B_HORSE, B_ROOK, B_CANNON, B_PAWN,
+    R_KING, R_GUARD, R_BISHOP, R_HORSE, R_ROOK, R_CANNON, R_PAWN
+)
 
 
-def print_board_text(board):
+def print_board_text(board: b.Board):
     """以文本形式打印棋盘,并用颜色区分红黑双方"""
 
     # ANSI color codes
