@@ -30,7 +30,7 @@ class Engine:
     def _check_time(self):
         """每隔2048个节点检查一次时间, 如果超时则抛出异常."""
         if (self.nodes_searched & 2047) == 0:  # 高效的取模操作
-            if time.time() - self.start_time >= self.time_limit:
+            if self.time_limit > 0 and time.time() - self.start_time >= self.time_limit:
                 raise StopSearchException()
 
     def _quiescence_search(self, board: b.Board, alpha: float, beta: float) -> Tuple[float, Optional[b.Move]]:
