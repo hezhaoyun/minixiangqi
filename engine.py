@@ -2,6 +2,8 @@
 
 import math
 import time
+import json
+import random
 from typing import Dict, Optional, Tuple
 
 import board as b
@@ -26,6 +28,39 @@ class Engine:
         self.nodes_searched = 0
         self.start_time = 0
         self.time_limit = 0
+        self.opening_book = None
+        self.book_random = random.Random()
+        self._load_opening_book()
+
+    def _load_opening_book(self):
+        """加载开局库文件."""
+        try:
+            with open('opening_book.json', 'r') as f:
+                book_str_keys = json.load(f)
+                # JSON keys are strings, convert them to int
+                self.opening_book = {int(k): [tuple(map(tuple, move)) for move in v] for k, v in book_str_keys.items()}
+            print("开局库加载成功。")
+        except FileNotFoundError:
+            print("未找到开局库文件, 将不使用开局库。")
+            self.opening_book = None
+        except Exception as e:
+            print(f"加载开局库时发生错误: {e}")
+            self.opening_book = None
+
+    def query_opening_book(self, board: b.Board) -> Optional[b.Move]:
+        """在开局库中查询当前局面."""
+        if not self.opening_book:
+            return None
+
+        key = board.hash_key
+        if key in self.opening_book:
+            moves = self.opening_book[key]
+            # 验证走法是否合法
+            legal_moves = moves_gen.generate_moves(board)
+            valid_book_moves = [move for move in moves if move in legal_moves]
+            if valid_book_moves:
+                return self.book_random.choice(valid_book_moves)
+        return None
 
     def _check_time(self):
         """每隔2048个节点检查一次时间, 如果超时则抛出异常."""
@@ -145,6 +180,11 @@ class Engine:
         从深度1开始, 迭代搜索到指定的深度.
         这样可以更好地利用置换表, 并允许未来的时间控制.
         """
+        book_move = self.query_opening_book(board)
+        if book_move:
+            print(f"Opening book move: {book_move}")
+            return 0, book_move
+
         board_copy = board.copy()
         self.tt.clear()
         best_move = None
@@ -163,6 +203,11 @@ class Engine:
         """
         执行基于时间限制的迭代深化搜索.
         """
+        book_move = self.query_opening_book(board)
+        if book_move:
+            print(f"Opening book move: {book_move}")
+            return 0, book_move
+
         board_copy = board.copy()
         self.tt.clear()
         self.start_time = time.time()

@@ -1,0 +1,3 @@
+[submodule "xq_data"]
+	path = xq_data
+	url = https://github.com/chasoft/community-xiangqi-games-database.git
