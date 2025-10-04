@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Module",
+            "name": "simulated_confrontation",
             "type": "debugpy",
             "request": "launch",
-            "module": "src.simulated_confrontation"
+            "module": "scripts.simulated_confrontation"
         },
         {
             "name": "main",

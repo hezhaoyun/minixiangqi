@@ -1,11 +1,6 @@
-from board import Board, Move
-from engine import Engine
-
-
-from constants import (
-    EMPTY, B_KING, B_GUARD, B_BISHOP, B_HORSE, B_ROOK, B_CANNON, B_PAWN,
-    R_KING, R_GUARD, R_BISHOP, R_HORSE, R_ROOK, R_CANNON, R_PAWN
-)
+from src.constants import *
+from src.engine import Engine
+from src.board import Board, Move
 
 
 def print_board_text(board: Board, last_move: Move = None):

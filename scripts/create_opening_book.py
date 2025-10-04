@@ -2,9 +2,9 @@ import os
 import re
 import json
 from typing import Optional, List
-from board import Board, Move
-from moves_gen import generate_moves
-from constants import *
+from src.board import Board, Move
+from src.moves_gen import generate_moves
+from src.constants import *
 
 # 开局库数据源目录
 DATA_SOURCE_DIR = 'xq_data/data/opening'
