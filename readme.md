@@ -45,13 +45,17 @@ The engine implements a comprehensive suite of technologies that form the backbo
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/minixiangqi.git
+    git clone --recursive https://github.com/hezhaoyun/minixiangqi.git
     cd minixiangqi
     ```
 
-2.  **Run the engine:**
+2.  **Create Opening Book:**
     ```bash
-    python src/main.py
+    python -m scripts.create_opening_book
+    ```
+3.  **Run the engine:**
+    ```bash
+    python -m src.main
     ```
 
 ---
