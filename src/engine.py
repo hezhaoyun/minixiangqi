@@ -6,7 +6,7 @@ import json
 import random
 from typing import Dict, Optional, Tuple
 
-import src.board as b
+from src.board import Board, Move
 from src.evaluate import evaluate
 from src.moves_gen import generate_moves, generate_capture_moves, order_moves
 from src.constants import *
@@ -47,7 +47,7 @@ class Engine:
             print(f'加载开局库时发生错误: {e}')
             self.opening_book = None
 
-    def query_opening_book(self, board: b.Board) -> Optional[b.Move]:
+    def query_opening_book(self, board: Board) -> Optional[Move]:
         '''在开局库中查询当前局面.'''
         if not self.opening_book:
             return None
@@ -68,7 +68,7 @@ class Engine:
             if self.time_limit > 0 and time.time() - self.start_time >= self.time_limit:
                 raise StopSearchException()
 
-    def _quiescence_search(self, board: b.Board, alpha: float, beta: float) -> Tuple[float, Optional[b.Move]]:
+    def _quiescence_search(self, board: Board, alpha: float, beta: float) -> Tuple[float, Optional[Move]]:
         '''
         静态搜索, 用于处理不稳定的局面 (主要指吃子), 以避免地平线效应.
         '''
@@ -99,7 +99,7 @@ class Engine:
 
         return alpha, None
 
-    def _negamax(self, board: b.Board, depth: int, alpha: float, beta: float) -> Tuple[float, Optional[b.Move]]:
+    def _negamax(self, board: Board, depth: int, alpha: float, beta: float) -> Tuple[float, Optional[Move]]:
         '''
         使用 Negamax 算法结合 Alpha-Beta 剪枝和置换表来搜索. 
         '''
@@ -181,7 +181,7 @@ class Engine:
 
         return best_value, best_move
 
-    def search_by_depth(self, board: b.Board, depth: int) -> Tuple[float, Optional[b.Move]]:
+    def search_by_depth(self, board: Board, depth: int) -> Tuple[float, Optional[Move]]:
         '''
         执行迭代深化搜索.
         从深度1开始, 迭代搜索到指定的深度.
@@ -206,7 +206,7 @@ class Engine:
 
         return final_score, best_move
 
-    def search_by_time(self, board: b.Board, time_limit_seconds: float) -> Tuple[float, Optional[b.Move]]:
+    def search_by_time(self, board: Board, time_limit_seconds: float) -> Tuple[float, Optional[Move]]:
         '''
         执行基于时间限制的迭代深化搜索.
         '''

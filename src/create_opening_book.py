@@ -3,12 +3,8 @@ import re
 import json
 from typing import Optional, List
 from board import Board, Move
-import moves_gen
-from constants import (
-    PLAYER_R, PLAYER_B, EMPTY,
-    R_KING, B_KING, R_GUARD, B_GUARD, R_BISHOP, B_BISHOP,
-    R_HORSE, B_HORSE, R_ROOK, B_ROOK, R_CANNON, B_CANNON, R_PAWN, B_PAWN
-)
+from moves_gen import generate_moves
+from constants import *
 
 # 开局库数据源目录
 DATA_SOURCE_DIR = 'xq_data/data/opening'
@@ -93,7 +89,7 @@ def build_book():
                         break
 
                     zobrist_key = board.hash_key
-                    legal_moves = moves_gen.generate_moves(board)
+                    legal_moves = generate_moves(board)
 
                     move = parse_move_str(move_str)
 
