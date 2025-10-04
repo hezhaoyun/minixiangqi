@@ -11,6 +11,8 @@ import evaluate
 import moves_gen
 import tools
 
+import constants
+
 # 置换表条目的标志
 TT_EXACT = 0  # 精确值 (PV-Node)
 TT_LOWER = 1  # Alpha值 (Fail-High)
@@ -105,6 +107,13 @@ class Engine:
         """
         self.nodes_searched += 1
         self._check_time()
+
+        # 游戏结束判断
+        status, _ = board.is_game_over()
+        if status == "checkmate":
+            return -constants.MATE_VALUE, None
+        if status == "stalemate":
+            return constants.DRAW_VALUE, None
 
         original_alpha = alpha
         tt_entry = self.tt.get(board.hash_key)

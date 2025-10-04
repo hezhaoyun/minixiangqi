@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 
 """
 中国象棋走法生成器
@@ -7,17 +7,11 @@
 from typing import List, Optional
 
 import board as b
-import evaluate
-from board import get_player
+from board import get_player, is_valid_pos
 from constants import (
     EMPTY, PLAYER_B, PLAYER_R, R_BISHOP, R_CANNON, R_GUARD, R_HORSE, R_KING,
-    R_PAWN, R_ROOK
+    R_PAWN, R_ROOK, PIECE_VALUES
 )
-
-
-def is_valid_pos(r: int, c: int) -> bool:
-    """检查位置是否在棋盘内 (0-9, 0-8)"""
-    return 0 <= r <= 9 and 0 <= c <= 8
 
 
 def generate_moves(board: b.Board) -> List[b.Move]:
@@ -26,14 +20,29 @@ def generate_moves(board: b.Board) -> List[b.Move]:
     :param board: Board 对象
     :return: 一个包含所有走法的列表
     """
-    moves = []
+    pseudo_legal_moves = []
     board_state = board.board
     player = board.player
 
     for r, c in board.piece_list[player]:
-        moves.extend(get_piece_moves(board_state, r, c))
+        pseudo_legal_moves.extend(get_piece_moves(board_state, r, c))
 
-    return moves
+    legal_moves = []
+    for move in pseudo_legal_moves:
+        captured_piece = board.make_move(move)
+
+        # 切换到对手视角来检查攻击
+        board.player *= -1
+
+        if not board.is_check():
+            legal_moves.append(move)
+
+        # 切换回原来玩家
+        board.player *= -1
+
+        board.unmake_move(move, captured_piece)
+
+    return legal_moves
 
 
 def get_piece_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
@@ -244,8 +253,8 @@ def order_moves(board_state: b.BoardState, moves: List[b.Move], best_move_from_t
             captured_piece = board_state[to_r][to_c]
             if captured_piece != EMPTY:
                 moving_piece = board_state[from_r][from_c]
-                victim_value = abs(evaluate.PIECE_VALUES.get(captured_piece, 0))
-                attacker_value = abs(evaluate.PIECE_VALUES.get(moving_piece, 0))
+                victim_value = abs(PIECE_VALUES.get(captured_piece, 0))
+                attacker_value = abs(PIECE_VALUES.get(moving_piece, 0))
                 score = CAPTURE_BONUS + victim_value - attacker_value
 
         move_scores[move] = score
@@ -266,7 +275,7 @@ def generate_capture_moves(board: b.Board) -> List[b.Move]:
             to_r, to_c = move[1]
             if board_state[to_r][to_c] != EMPTY:
                 capture_moves.append(move)
-    
+
     return capture_moves
 
 

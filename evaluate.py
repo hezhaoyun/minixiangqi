@@ -8,15 +8,8 @@ from typing import List
 import board
 from constants import (
     EMPTY, B_KING, B_GUARD, B_BISHOP, B_HORSE, B_ROOK, B_CANNON, B_PAWN,
-    R_KING, R_GUARD, R_BISHOP, R_HORSE, R_ROOK, R_CANNON, R_PAWN
+    R_KING, R_GUARD, R_BISHOP, R_HORSE, R_ROOK, R_CANNON, R_PAWN, PIECE_VALUES
 )
-
-# 棋子基础价值
-PIECE_VALUES = {
-    B_KING: -10000, B_GUARD: -100, B_BISHOP: -100, B_HORSE: -450, B_ROOK: -900, B_CANNON: -500, B_PAWN: -100,
-    R_KING: 10000, R_GUARD: 100, R_BISHOP: 100, R_HORSE: 450, R_ROOK: 900, R_CANNON: 500, R_PAWN: 100,
-    EMPTY: 0
-}
 
 # --- Piece-Square Tables (PST) ---
 # fmt: off

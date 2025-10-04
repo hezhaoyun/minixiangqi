@@ -25,6 +25,8 @@ engine = Engine()
 selected_piece_pos = None
 last_move = None
 move_history = []
+game_over = False
+game_result_message = ""
 
 
 def draw_board():
@@ -82,7 +84,7 @@ def draw_last_move():
 
 
 def main():
-    global selected_piece_pos, board, last_move, move_history
+    global selected_piece_pos, board, last_move, move_history, game_over, game_result_message
     running = True
     while running:
         for event in pygame.event.get():
@@ -91,10 +93,12 @@ def main():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:  # Restart
-                    board = Board()
+                    board = Board('r4k3/9/9/9/9/4R4/9/9/9/4K4 w - - 0 1')
                     selected_piece_pos = None
                     last_move = None
                     move_history = []
+                    game_over = False
+                    game_result_message = ""
                 if event.key == pygame.K_u:  # Undo
                     if len(move_history) >= 2:
                         # Undo engine's move
@@ -106,7 +110,7 @@ def main():
                         last_move = None
                         selected_piece_pos = None
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
                 c = (event.pos[0] - 30 + 30) // 60
                 r = (event.pos[1] - 30 + 30) // 60
 
@@ -127,23 +131,36 @@ def main():
                         draw_pieces()
                         draw_last_move()
                         pygame.display.flip()
-                        pygame.time.wait(300)  # show player's move
 
-                        # --- Show thinking indicator ---
-                        overlay = pygame.Surface((300, 50), pygame.SRCALPHA)
-                        overlay.fill((255, 255, 255, 255))
-                        screen.blit(overlay, (SCREEN_WIDTH / 2 - 300 / 2, SCREEN_HEIGHT / 2 - 50 / 2))
-                        think_text = font.render("Engine is thinking...", True, (0, 0, 0))
-                        text_rect = think_text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
-                        screen.blit(think_text, text_rect)
-                        pygame.display.flip()
+                        # 检查游戏是否结束
+                        status, message = board.is_game_over()
+                        if status != "in_progress":
+                            game_over = True
+                            game_result_message = message
+                        else:
+                            pygame.time.wait(300)  # show player's move
 
-                        # Engine's turn
-                        _, engine_move = engine.search_by_time(board, 3.0)
-                        if engine_move:
-                            captured_piece = board.make_move(engine_move)
-                            move_history.append((engine_move, captured_piece))
-                            last_move = engine_move
+                            # --- Show thinking indicator ---
+                            overlay = pygame.Surface((300, 50), pygame.SRCALPHA)
+                            overlay.fill((255, 255, 255, 255))
+                            screen.blit(overlay, (SCREEN_WIDTH / 2 - 300 / 2, SCREEN_HEIGHT / 2 - 50 / 2))
+                            think_text = font.render("Engine is thinking...", True, (0, 0, 0))
+                            text_rect = think_text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+                            screen.blit(think_text, text_rect)
+                            pygame.display.flip()
+
+                            # Engine's turn
+                            _, engine_move = engine.search_by_time(board, 3.0)
+                            if engine_move:
+                                captured_piece = board.make_move(engine_move)
+                                move_history.append((engine_move, captured_piece))
+                                last_move = engine_move
+
+                                # 检查游戏是否结束
+                                status, message = board.is_game_over()
+                                if status != "in_progress":
+                                    game_over = True
+                                    game_result_message = message
                     else:
                         selected_piece_pos = None
                 else:
@@ -154,6 +171,15 @@ def main():
         draw_board()
         draw_pieces()
         draw_last_move()
+
+        if game_over:
+            overlay = pygame.Surface((SCREEN_WIDTH, 100), pygame.SRCALPHA)
+            overlay.fill((255, 255, 255, 220))
+            screen.blit(overlay, (0, SCREEN_HEIGHT / 2 - 50))
+            result_text = font.render(game_result_message, True, (255, 0, 0))
+            text_rect = result_text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+            screen.blit(result_text, text_rect)
+
         pygame.display.flip()
 
     pygame.quit()
