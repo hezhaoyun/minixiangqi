@@ -15,13 +15,15 @@ PIECE_RADIUS = 25
 # --- Pygame Setup ---
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Mini Xiangqi")
+pygame.display.set_caption("Mini Xiangqi (r: resart, u: undo)")
 font = pygame.font.Font("SimHei.ttf", 24)
 
 # --- Game State ---
 board = Board()
 engine = Engine()
 selected_piece_pos = None
+last_move = None
+move_history = []
 
 
 def draw_board():
@@ -70,13 +72,38 @@ def draw_pieces():
                 screen.blit(text, text_rect)
 
 
+def draw_last_move():
+    if last_move:
+        from_r, from_c = last_move[0]
+        to_r, to_c = last_move[1]
+        pygame.draw.circle(screen, (0, 128, 0, 50), (from_c * 60+30, from_r * 60+30), 10)
+        pygame.draw.circle(screen, (0, 128, 0, 50), (to_c * 60+30, to_r * 60+30), 5)
+
+
 def main():
-    global selected_piece_pos
+    global selected_piece_pos, board, last_move, move_history
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:  # Restart
+                    board = Board()
+                    selected_piece_pos = None
+                    last_move = None
+                    move_history = []
+                if event.key == pygame.K_u:  # Undo
+                    if len(move_history) >= 2:
+                        # Undo engine's move
+                        move, captured = move_history.pop()
+                        board.unmake_move(move, captured)
+                        # Undo player's move
+                        move, captured = move_history.pop()
+                        board.unmake_move(move, captured)
+                        last_move = None
+                        selected_piece_pos = None
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 c = (event.pos[0] - 30 + 30) // 60
@@ -91,16 +118,22 @@ def main():
                     legal_moves = moves_gen.generate_moves(board)
 
                     if move in legal_moves:
-                        board.make_move(move)
+                        captured_piece = board.make_move(move)
+                        move_history.append((move, captured_piece))
+                        last_move = move
                         selected_piece_pos = None
                         draw_board()
                         draw_pieces()
+                        draw_last_move()
                         pygame.display.flip()
+                        pygame.time.wait(300)  # show player's move
 
                         # Engine's turn
-                        _, engine_move = engine.search_by_time(board, 3.0)
+                        _, engine_move = engine.search_by_time(board, 1.0)
                         if engine_move:
-                            board.make_move(engine_move)
+                            captured_piece = board.make_move(engine_move)
+                            move_history.append((engine_move, captured_piece))
+                            last_move = engine_move
                     else:
                         selected_piece_pos = None
                 else:
@@ -110,6 +143,7 @@ def main():
 
         draw_board()
         draw_pieces()
+        draw_last_move()
         pygame.display.flip()
 
     pygame.quit()
