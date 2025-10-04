@@ -5,7 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Current File",
+            "name": "simulated confrontation",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "simulated_confrontation.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "gui",
             "type": "debugpy",
             "request": "launch",
             "program": "main.py",

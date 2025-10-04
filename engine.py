@@ -9,7 +9,6 @@ from typing import Dict, Optional, Tuple
 import board as b
 import evaluate
 import moves_gen
-import tools
 
 import constants
 
