@@ -113,6 +113,32 @@ MOBILITY_BONUS = {
 # 需要计算机动性的棋子类型
 MOBILITY_PIECES = {R_ROOK, R_HORSE, R_CANNON}
 
+# 将/帅安全惩罚: 九宫格内每有一个点被对方攻击, 己方被扣除的分数
+KING_SAFETY_PENALTY = 15
+
+
+def _calculate_king_safety_score(current_board: Board) -> int:
+    '''计算将/帅安全分数'''
+    king_safety_score = 0
+
+    # 定义九宫格区域
+    PALACE_ZONES = {
+        PLAYER_R: [(r, c) for r in range(7, 10) for c in range(3, 6)],
+        PLAYER_B: [(r, c) for r in range(0, 3) for c in range(3, 6)]
+    }
+
+    # 检查黑方九宫格是否被红方攻击
+    for pos in PALACE_ZONES[PLAYER_B]:
+        if current_board.is_square_attacked_by(pos, PLAYER_R):
+            king_safety_score += KING_SAFETY_PENALTY  # 黑方危险, 对红方有利
+
+    # 检查红方九宫格是否被黑方攻击
+    for pos in PALACE_ZONES[PLAYER_R]:
+        if current_board.is_square_attacked_by(pos, PLAYER_B):
+            king_safety_score -= KING_SAFETY_PENALTY  # 红方危险, 对红方不利
+
+    return king_safety_score
+
 
 def evaluate(current_board: Board) -> int:
     '''
@@ -123,17 +149,13 @@ def evaluate(current_board: Board) -> int:
     score = 0
     board_state = current_board.board
 
-    # 通过遍历 piece_list 来优化, 而不是遍历整个棋盘
+    # 1. 计算子力 + 位置 + 机动性
     # 红方
     for r, c in current_board.piece_list[PLAYER_R]:
         piece = board_state[r][c]
         piece_type = abs(piece)
-
-        # 1. 子力价值
         score += PIECE_VALUES[piece]
-        # 2. 棋子位置价值
         score += PST[piece][9 - r][8 - c]
-        # 3. 棋子机动性
         if piece_type in MOBILITY_PIECES:
             moves = get_piece_moves(board_state, r, c)
             score += len(moves) * MOBILITY_BONUS.get(piece_type, 0)
@@ -142,15 +164,14 @@ def evaluate(current_board: Board) -> int:
     for r, c in current_board.piece_list[PLAYER_B]:
         piece = board_state[r][c]
         piece_type = abs(piece)
-
-        # 1. 子力价值
         score += PIECE_VALUES[piece]
-        # 2. 棋子位置价值
         score -= PST[piece][r][c]
-        # 3. 棋子机动性
         if piece_type in MOBILITY_PIECES:
             moves = get_piece_moves(board_state, r, c)
             score -= len(moves) * MOBILITY_BONUS.get(piece_type, 0)
+
+    # 2. 计算将/帅安全分数
+    score += _calculate_king_safety_score(current_board)
 
     return score
 

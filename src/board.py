@@ -214,104 +214,79 @@ class Board:
         king_pos = None
         king_piece = R_KING if self.player == PLAYER_R else B_KING
 
-        for r in range(10):
-            for c in range(9):
-                if self.board[r][c] == king_piece:
-                    king_pos = (r, c)
-                    break
-            if king_pos:
+        # 寻找己方将/帅的位置
+        for r_idx, row in enumerate(self.board):
+            try:
+                c_idx = row.index(king_piece)
+                king_pos = (r_idx, c_idx)
                 break
-
+            except ValueError:
+                continue
+        
         if not king_pos:
-            return False  # Should not happen
+            return False  # Should not happen in a legal game
 
-        # 切换到对手视角来检查攻击
-        self.player *= -1
-        can_be_attacked = self._is_square_attacked(king_pos)
-        # 切换回原来玩家
-        self.player *= -1
+        # 检查该位置是否被对方攻击
+        opponent = -self.player
+        return self.is_square_attacked_by(king_pos, opponent)
 
-        return can_be_attacked
-
-    def _is_square_attacked(self, pos: Tuple[int, int]) -> bool:
-        '''检查指定位置是否被当前玩家攻击'''
-        # 在这个方法里, self.player 是攻击方
+    def is_square_attacked_by(self, pos: Tuple[int, int], attacker_player: int) -> bool:
+        '''检查指定位置(pos)是否被指定玩家(attacker_player)攻击'''
         r, c = pos
 
         # 检查兵/卒的攻击
-        pawn_piece = R_PAWN if self.player == PLAYER_R else B_PAWN
-        if self.player == PLAYER_R:  # 红兵向上攻击
+        pawn_piece = R_PAWN if attacker_player == PLAYER_R else B_PAWN
+        if attacker_player == PLAYER_R:  # 红兵向上攻击
             if r > 0 and self.board[r - 1][c] == pawn_piece:
                 return True
             if r > 4:  # 已过河
-                if c > 0 and self.board[r][c - 1] == pawn_piece:
-                    return True
-                if c < 8 and self.board[r][c + 1] == pawn_piece:
-                    return True
+                if c > 0 and self.board[r][c - 1] == pawn_piece: return True
+                if c < 8 and self.board[r][c + 1] == pawn_piece: return True
         else:  # 黑卒向下攻击
             if r < 9 and self.board[r + 1][c] == pawn_piece:
                 return True
             if r < 5:  # 已过河
-                if c > 0 and self.board[r][c - 1] == pawn_piece:
-                    return True
-                if c < 8 and self.board[r][c + 1] == pawn_piece:
-                    return True
+                if c > 0 and self.board[r][c - 1] == pawn_piece: return True
+                if c < 8 and self.board[r][c + 1] == pawn_piece: return True
 
         # 检查马的攻击
-        horse_piece = R_HORSE if self.player == PLAYER_R else B_HORSE
+        horse_piece = R_HORSE if attacker_player == PLAYER_R else B_HORSE
         for dr, dc in [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2)]:
             nr, nc = r + dr, c + dc
             if is_valid_pos(nr, nc) and self.board[nr][nc] == horse_piece:
-                # 检查马腿是否被别住
-                # 马腿的位置是马的起始点(nr, nc)和目标点(r, c)之间的中间点
-                if abs(dr) == 2:  # 竖直方向的“日”字
-                    leg_r = nr - dr // 2
-                    leg_c = nc
-                else:  # 水平方向的“日”字
-                    leg_r = nr
-                    leg_c = nc - dc // 2
-                
+                if abs(dr) == 2: leg_r, leg_c = nr - dr // 2, nc
+                else: leg_r, leg_c = nr, nc - dc // 2
                 if self.board[leg_r][leg_c] == EMPTY:
                     return True
 
         # 检查车和炮的攻击
-        rook_piece = R_ROOK if self.player == PLAYER_R else B_ROOK
-        cannon_piece = R_CANNON if self.player == PLAYER_R else B_CANNON
+        rook_piece = R_ROOK if attacker_player == PLAYER_R else B_ROOK
+        cannon_piece = R_CANNON if attacker_player == PLAYER_R else B_CANNON
         for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
             screen = False
             for i in range(1, 10):
                 nr, nc = r + i * dr, c + i * dc
-                if not is_valid_pos(nr, nc):
-                    break
+                if not is_valid_pos(nr, nc): break
                 piece = self.board[nr][nc]
                 if not screen:
                     if piece != EMPTY:
-                        if piece == rook_piece:
-                            return True
+                        if piece == rook_piece: return True
                         screen = True
                 else:
                     if piece != EMPTY:
-                        if piece == cannon_piece:
-                            return True
+                        if piece == cannon_piece: return True
                         break
 
         # 检查将的攻击 (对脸)
-        attacking_king_piece = R_KING if self.player == PLAYER_R else B_KING
-        # Scan up and down the file from `pos` to find the attacking king.
-        # If another piece is found first, the path is blocked.
-        for dr in [-1, 1]:  # -1 for up, 1 for down
+        attacking_king_piece = R_KING if attacker_player == PLAYER_R else B_KING
+        for dr in [-1, 1]:
             for i in range(1, 10):
                 nr = r + dr * i
-                if not is_valid_pos(nr, c):
-                    break
-
+                if not is_valid_pos(nr, c): break
                 piece = self.board[nr][c]
                 if piece != EMPTY:
-                    if piece == attacking_king_piece:
-                        return True  # Found attacking king with no pieces in between
-                    # Path is blocked by another piece
+                    if piece == attacking_king_piece: return True
                     break
-
         return False
 
     def is_game_over(self):
