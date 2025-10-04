@@ -1,33 +1,119 @@
+
+import pygame
+import sys
 from board import Board
 from engine import Engine
-from tools import print_board_text
+import moves_gen
+
+# --- Constants ---
+SCREEN_WIDTH = 540
+SCREEN_HEIGHT = 600
+BOARD_COLOR = (240, 217, 181)  # Beige
+LINE_COLOR = (0, 0, 0)
+PIECE_RADIUS = 25
+
+# --- Pygame Setup ---
+pygame.init()
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Mini Xiangqi")
+font = pygame.font.Font("SimHei.ttf", 24)
+
+# --- Game State ---
+board = Board()
+engine = Engine()
+selected_piece_pos = None
+
+
+def draw_board():
+    screen.fill(BOARD_COLOR)
+    # Draw grid lines
+    for i in range(10):
+        pygame.draw.line(screen, LINE_COLOR, (30, 30 + i * 60), (510, 30 + i * 60), 1)
+    for i in range(9):
+        pygame.draw.line(screen, LINE_COLOR, (30 + i * 60, 30), (30 + i * 60, 570), 1)
+
+    # River
+    pygame.draw.rect(screen, BOARD_COLOR, (31, 271, 478, 58))
+    river_text = font.render("楚 河      漢 界", True, LINE_COLOR)
+    screen.blit(river_text, (180, 285))
+
+    # Palaces
+    pygame.draw.line(screen, LINE_COLOR, (210, 30), (330, 150), 1)
+    pygame.draw.line(screen, LINE_COLOR, (330, 30), (210, 150), 1)
+    pygame.draw.line(screen, LINE_COLOR, (210, 450), (330, 570), 1)
+    pygame.draw.line(screen, LINE_COLOR, (330, 450), (210, 570), 1)
+
+
+def draw_pieces():
+    piece_map = {
+        1: "帅", 2: "仕", 3: "相", 4: "马", 5: "车", 6: "炮", 7: "兵",
+        -1: "将", -2: "士", -3: "象", -4: "马", -5: "车", -6: "炮", -7: "卒",
+    }
+    color_map = {1: (255, 0, 0), -1: (0, 0, 0)}
+
+    for r in range(10):
+        for c in range(9):
+            piece = board.board[r][c]
+            if piece != 0:
+                player = 1 if piece > 0 else -1
+                x, y = 30 + c * 60, 30 + r * 60
+
+                fill_color = (255, 255, 255)
+                if (r, c) == selected_piece_pos:
+                    fill_color = (173, 216, 230)  # lightblue
+
+                pygame.draw.circle(screen, fill_color, (x, y), PIECE_RADIUS)
+                pygame.draw.circle(screen, LINE_COLOR, (x, y), PIECE_RADIUS, 1)
+
+                text = font.render(piece_map[piece], True, color_map[player])
+                text_rect = text.get_rect(center=(x, y))
+                screen.blit(text, text_rect)
 
 
 def main():
-    """主函数, 模拟对局"""
+    global selected_piece_pos
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-    SIMULATE_STEPS = 24
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                c = (event.pos[0] - 30 + 30) // 60
+                r = (event.pos[1] - 30 + 30) // 60
 
-    game_board = Board()
-    engine = Engine()
+                if not (0 <= r < 10 and 0 <= c < 9):
+                    continue
 
-    print_board_text(game_board)
+                if selected_piece_pos:
+                    from_r, from_c = selected_piece_pos
+                    move = ((from_r, from_c), (r, c))
+                    legal_moves = moves_gen.generate_moves(board)
 
-    for i in range(SIMULATE_STEPS):
-        # 使用按时间限制的搜索
-        final_score, best_move = engine.search_by_time(game_board, 2.0)
-        print(f"\n思考时间: {2.0}s, 评估分数: {final_score}，最佳着法是: {best_move}")
+                    if move in legal_moves:
+                        board.make_move(move)
+                        selected_piece_pos = None
+                        draw_board()
+                        draw_pieces()
+                        pygame.display.flip()
 
-        # 使用按深度限制的搜索
-        # final_score, best_move = engine.search_by_depth(game_board, 5)
-        # print(f"\n思考深度: 5, 评估分数: {final_score}，最佳着法是: {best_move}")
+                        # Engine's turn
+                        _, engine_move = engine.search_by_time(board, 3.0)
+                        if engine_move:
+                            board.make_move(engine_move)
+                    else:
+                        selected_piece_pos = None
+                else:
+                    piece = board.board[r][c]
+                    if piece != 0 and (piece > 0 and board.player == 1 or piece < 0 and board.player == -1):
+                        selected_piece_pos = (r, c)
 
-        if best_move is None:
-            print("无棋可走, 游戏结束.")
-            break
+        draw_board()
+        draw_pieces()
+        pygame.display.flip()
 
-        game_board.make_move(best_move)
-        print_board_text(game_board, best_move)
+    pygame.quit()
+    sys.exit()
 
 
 if __name__ == "__main__":
