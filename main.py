@@ -141,9 +141,9 @@ def main():
                             pygame.time.wait(300)  # show player's move
 
                             # --- Show thinking indicator ---
-                            overlay = pygame.Surface((300, 50), pygame.SRCALPHA)
-                            overlay.fill((255, 255, 255, 255))
-                            screen.blit(overlay, (SCREEN_WIDTH / 2 - 300 / 2, SCREEN_HEIGHT / 2 - 50 / 2))
+                            overlay = pygame.Surface((SCREEN_WIDTH, 100), pygame.SRCALPHA)
+                            overlay.fill((255, 255, 255, 220))
+                            screen.blit(overlay, (0, SCREEN_HEIGHT / 2 - 100 / 2))
                             think_text = font.render("Engine is thinking...", True, (0, 0, 0))
                             text_rect = think_text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
                             screen.blit(think_text, text_rect)
@@ -175,8 +175,8 @@ def main():
         if game_over:
             overlay = pygame.Surface((SCREEN_WIDTH, 100), pygame.SRCALPHA)
             overlay.fill((255, 255, 255, 220))
-            screen.blit(overlay, (0, SCREEN_HEIGHT / 2 - 50))
-            result_text = font.render(game_result_message, True, (255, 0, 0))
+            screen.blit(overlay, (0, SCREEN_HEIGHT / 2 - 100 / 2))
+            result_text = font.render(game_result_message, True, (0, 0, 0))
             text_rect = result_text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
             screen.blit(result_text, text_rect)
 
