@@ -7,6 +7,7 @@ from typing import List
 
 from src.board import Board
 from src.constants import *
+from src.moves_gen import get_piece_moves
 
 # --- Piece-Square Tables (PST) ---
 # fmt: off
@@ -103,6 +104,15 @@ PST = {
     R_ROOK: ROOK_PST, R_CANNON: CANNON_PST, R_PAWN: PAWN_PST,
 }
 
+# 机动性奖励: key 为棋子类型, value 为每一步合法移动的奖励分数
+MOBILITY_BONUS = {
+    R_ROOK: 2,
+    R_HORSE: 3,
+    R_CANNON: 1,
+}
+# 需要计算机动性的棋子类型
+MOBILITY_PIECES = {R_ROOK, R_HORSE, R_CANNON}
+
 
 def evaluate(current_board: Board) -> int:
     '''
@@ -117,14 +127,30 @@ def evaluate(current_board: Board) -> int:
     # 红方
     for r, c in current_board.piece_list[PLAYER_R]:
         piece = board_state[r][c]
+        piece_type = abs(piece)
+
+        # 1. 子力价值
         score += PIECE_VALUES[piece]
+        # 2. 棋子位置价值
         score += PST[piece][9 - r][8 - c]
+        # 3. 棋子机动性
+        if piece_type in MOBILITY_PIECES:
+            moves = get_piece_moves(board_state, r, c)
+            score += len(moves) * MOBILITY_BONUS.get(piece_type, 0)
 
     # 黑方
     for r, c in current_board.piece_list[PLAYER_B]:
         piece = board_state[r][c]
+        piece_type = abs(piece)
+
+        # 1. 子力价值
         score += PIECE_VALUES[piece]
+        # 2. 棋子位置价值
         score -= PST[piece][r][c]
+        # 3. 棋子机动性
+        if piece_type in MOBILITY_PIECES:
+            moves = get_piece_moves(board_state, r, c)
+            score -= len(moves) * MOBILITY_BONUS.get(piece_type, 0)
 
     return score
 
