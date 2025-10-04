@@ -5,6 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "evaluate",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.evaluate"
+        },
+        {
             "name": "simulated_confrontation",
             "type": "debugpy",
             "request": "launch",
