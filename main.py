@@ -4,6 +4,7 @@ import sys
 from board import Board
 from engine import Engine
 import moves_gen
+import pygame.gfxdraw
 
 # --- Constants ---
 SCREEN_WIDTH = 540
@@ -28,22 +29,22 @@ move_history = []
 
 def draw_board():
     screen.fill(BOARD_COLOR)
-    # Draw grid lines
+    # Draw grid lines with anti-aliasing
     for i in range(10):
-        pygame.draw.line(screen, LINE_COLOR, (30, 30 + i * 60), (510, 30 + i * 60), 1)
+        pygame.draw.aaline(screen, LINE_COLOR, (30, 30 + i * 60), (510, 30 + i * 60))
     for i in range(9):
-        pygame.draw.line(screen, LINE_COLOR, (30 + i * 60, 30), (30 + i * 60, 570), 1)
+        pygame.draw.aaline(screen, LINE_COLOR, (30 + i * 60, 30), (30 + i * 60, 570))
 
     # River
-    pygame.draw.rect(screen, BOARD_COLOR, (31, 271, 478, 58))
+    pygame.draw.rect(screen, BOARD_COLOR, (31, 271, 479, 59))
     river_text = font.render("楚 河      漢 界", True, LINE_COLOR)
     screen.blit(river_text, (180, 285))
 
     # Palaces
-    pygame.draw.line(screen, LINE_COLOR, (210, 30), (330, 150), 1)
-    pygame.draw.line(screen, LINE_COLOR, (330, 30), (210, 150), 1)
-    pygame.draw.line(screen, LINE_COLOR, (210, 450), (330, 570), 1)
-    pygame.draw.line(screen, LINE_COLOR, (330, 450), (210, 570), 1)
+    pygame.draw.aaline(screen, LINE_COLOR, (210, 30), (330, 150))
+    pygame.draw.aaline(screen, LINE_COLOR, (330, 30), (210, 150))
+    pygame.draw.aaline(screen, LINE_COLOR, (210, 450), (330, 570))
+    pygame.draw.aaline(screen, LINE_COLOR, (330, 450), (210, 570))
 
 
 def draw_pieces():
@@ -64,8 +65,8 @@ def draw_pieces():
                 if (r, c) == selected_piece_pos:
                     fill_color = (173, 216, 230)  # lightblue
 
-                pygame.draw.circle(screen, fill_color, (x, y), PIECE_RADIUS)
-                pygame.draw.circle(screen, LINE_COLOR, (x, y), PIECE_RADIUS, 1)
+                pygame.gfxdraw.filled_circle(screen, x, y, PIECE_RADIUS, fill_color)
+                pygame.gfxdraw.aacircle(screen, x, y, PIECE_RADIUS, LINE_COLOR)
 
                 text = font.render(piece_map[piece], True, color_map[player])
                 text_rect = text.get_rect(center=(x, y))
@@ -76,8 +77,8 @@ def draw_last_move():
     if last_move:
         from_r, from_c = last_move[0]
         to_r, to_c = last_move[1]
-        pygame.draw.circle(screen, (0, 128, 0, 50), (from_c * 60+30, from_r * 60+30), 10)
-        pygame.draw.circle(screen, (0, 128, 0, 50), (to_c * 60+30, to_r * 60+30), 5)
+        pygame.gfxdraw.filled_circle(screen, from_c * 60 + 30, from_r * 60 + 30, 10, (0, 128, 0, 200))
+        pygame.gfxdraw.filled_circle(screen, to_c * 60 + 30, to_r * 60 + 30, 5, (0, 128, 0, 200))
 
 
 def main():
@@ -128,8 +129,17 @@ def main():
                         pygame.display.flip()
                         pygame.time.wait(300)  # show player's move
 
+                        # --- Show thinking indicator ---
+                        overlay = pygame.Surface((300, 50), pygame.SRCALPHA)
+                        overlay.fill((255, 255, 255, 255))
+                        screen.blit(overlay, (SCREEN_WIDTH / 2 - 300 / 2, SCREEN_HEIGHT / 2 - 50 / 2))
+                        think_text = font.render("Engine is thinking...", True, (0, 0, 0))
+                        text_rect = think_text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+                        screen.blit(think_text, text_rect)
+                        pygame.display.flip()
+
                         # Engine's turn
-                        _, engine_move = engine.search_by_time(board, 1.0)
+                        _, engine_move = engine.search_by_time(board, 3.0)
                         if engine_move:
                             captured_piece = board.make_move(engine_move)
                             move_history.append((engine_move, captured_piece))
