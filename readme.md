@@ -43,7 +43,7 @@ The engine implements a comprehensive suite of technologies that form the backbo
 
 ## Getting Started (如何开始)
 
-1.  **Clone the repository:**
+1.  **Clone the repository & submodules:**
     ```bash
     git clone --recursive https://github.com/hezhaoyun/minixiangqi.git
     cd minixiangqi
@@ -53,7 +53,7 @@ The engine implements a comprehensive suite of technologies that form the backbo
     ```bash
     python -m scripts.create_opening_book
     ```
-3.  **Run the engine:**
+3.  **Run the game with a sample GUI (R: Restart, U: Undo):**
     ```bash
     python -m src.main
     ```
