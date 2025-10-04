@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-"""
+'''
 中国象棋评估函数
-"""
+'''
 from typing import List
 
 import board
@@ -108,11 +108,11 @@ PST = {
 
 
 def evaluate(current_board: board.Board) -> int:
-    """
+    '''
     评估函数
     :param current_board: Board 对象
     :return: 局面的评估分数, 正数表示红方优势, 负数表示黑方优势
-    """
+    '''
     score = 0
     board_state = current_board.board
 
@@ -137,11 +137,11 @@ if __name__ == '__main__':
     initial_board = board.Board()
     initial_score = evaluate(initial_board)
 
-    print("初始局面评估分数:", initial_score)
+    print('初始局面评估分数:', initial_score)
 
     # 示例: 红方开局左炮打马后评估分数
     board_without_b_rook = board.Board()
     board_without_b_rook.make_move(((7, 1), (0, 1)))
     score_after_capture = evaluate(board_without_b_rook)
 
-    print("红方开局左炮打马后评估分数:", score_after_capture)
+    print('红方开局左炮打马后评估分数:', score_after_capture)

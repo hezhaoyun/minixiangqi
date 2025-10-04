@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-"""
+'''
 中国象棋棋盘 - 面向对象版本
-"""
+'''
 from typing import List, Optional, Tuple
 
 import zobrist
@@ -16,16 +16,16 @@ BoardState = List[List[int]]
 
 
 def get_player(piece: int) -> int:
-    """根据棋子判断玩家"""
+    '''根据棋子判断玩家'''
     return PLAYER_R if piece > 0 else PLAYER_B
 
 
 def piece_to_zobrist_idx(piece: int) -> int:
-    """
+    '''
     棋子到Zobrist数组索引的映射
     B_KING(-1) -> 0, B_GUARD(-2) -> 1, ..., B_PAWN(-7) -> 6
     R_KING(1) -> 7, R_GUARD(2) -> 8, ..., R_PAWN(7) -> 13
-    """
+    '''
     if piece < 0:
         return abs(piece) - 1
     elif piece > 0:
@@ -34,7 +34,7 @@ def piece_to_zobrist_idx(piece: int) -> int:
 
 
 def is_valid_pos(r: int, c: int) -> bool:
-    """检查位置是否在棋盘内 (0-9, 0-8)"""
+    '''检查位置是否在棋盘内 (0-9, 0-8)'''
     return 0 <= r <= 9 and 0 <= c <= 8
 
 
@@ -51,7 +51,7 @@ class Board:
         self.history: List[int] = [self.hash_key]  # 跟踪历史局面
 
     def copy(self):
-        """创建并返回当前局面的一个深拷贝."""
+        '''创建并返回当前局面的一个深拷贝.'''
         new_b = object.__new__(Board)  # 创建一个空对象,避免调用__init__
         new_b.board = [row[:] for row in self.board]
         new_b.player = self.player
@@ -130,7 +130,7 @@ class Board:
             fen += '/'
         fen = fen[:-1]
         side = 'w' if self.player == PLAYER_R else 'b'
-        fen += f" {side} - - 0 1"
+        fen += f' {side} - - 0 1'
         return fen
 
     def _calculate_initial_hash(self) -> int:
@@ -212,7 +212,7 @@ class Board:
         self.player *= -1
 
     def is_check(self):
-        """检查当前玩家是否被将军"""
+        '''检查当前玩家是否被将军'''
         king_pos = None
         king_piece = R_KING if self.player == PLAYER_R else B_KING
 
@@ -236,7 +236,7 @@ class Board:
         return can_be_attacked
 
     def _is_square_attacked(self, pos: Tuple[int, int]) -> bool:
-        """检查指定位置是否被当前玩家攻击"""
+        '''检查指定位置是否被当前玩家攻击'''
         # 在这个方法里, self.player 是攻击方
         r, c = pos
 
@@ -324,13 +324,13 @@ class Board:
                 # 当前玩家被将杀，对方胜利
                 if self.player == PLAYER_B:
                     # 黑方被将杀，红方胜
-                    return "checkmate", "红方胜"
+                    return 'checkmate', '红方胜'
                 else:
                     # 红方被将杀，黑方胜
-                    return "checkmate", "黑方胜"
+                    return 'checkmate', '黑方胜'
             # 如果没有被将军，则是困毙，和棋
             else:
-                return "stalemate", "和棋"
+                return 'stalemate', '和棋'
 
         # 否则游戏继续
-        return "in_progress", ""
+        return 'in_progress', ''

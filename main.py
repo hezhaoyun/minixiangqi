@@ -16,8 +16,8 @@ PIECE_RADIUS = 25
 # --- Pygame Setup ---
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Mini Xiangqi (r: resart, u: undo)")
-font = pygame.font.Font("SimHei.ttf", 24)
+pygame.display.set_caption('Mini Xiangqi (R: Resart, U: Undo, T: Test FEN)')
+font = pygame.font.Font('SimHei.ttf', 24)
 
 # --- Game State ---
 board = Board()
@@ -26,7 +26,7 @@ selected_piece_pos = None
 last_move = None
 move_history = []
 game_over = False
-game_result_message = ""
+game_result_message = ''
 
 
 def draw_board():
@@ -39,7 +39,7 @@ def draw_board():
 
     # River
     pygame.draw.rect(screen, BOARD_COLOR, (31, 271, 479, 59))
-    river_text = font.render("楚 河      漢 界", True, LINE_COLOR)
+    river_text = font.render('楚 河      漢 界', True, LINE_COLOR)
     screen.blit(river_text, (180, 285))
 
     # Palaces
@@ -51,8 +51,8 @@ def draw_board():
 
 def draw_pieces():
     piece_map = {
-        1: "帅", 2: "仕", 3: "相", 4: "马", 5: "车", 6: "炮", 7: "兵",
-        -1: "将", -2: "士", -3: "象", -4: "马", -5: "车", -6: "炮", -7: "卒",
+        1: '帅', 2: '仕', 3: '相', 4: '马', 5: '车', 6: '炮', 7: '兵',
+        -1: '将', -2: '士', -3: '象', -4: '马', -5: '车', -6: '炮', -7: '卒',
     }
     color_map = {1: (255, 0, 0), -1: (0, 0, 0)}
 
@@ -92,13 +92,20 @@ def main():
                 running = False
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:  # Restart
+                if event.key == pygame.K_t:  # Test FEN init position
                     board = Board('r4k3/9/9/9/9/4R4/9/9/9/4K4 w - - 0 1')
                     selected_piece_pos = None
                     last_move = None
                     move_history = []
                     game_over = False
-                    game_result_message = ""
+                    game_result_message = ''
+                if event.key == pygame.K_r:  # Restart
+                    board = Board()
+                    selected_piece_pos = None
+                    last_move = None
+                    move_history = []
+                    game_over = False
+                    game_result_message = ''
                 if event.key == pygame.K_u:  # Undo
                     if len(move_history) >= 2:
                         # Undo engine's move
@@ -134,7 +141,7 @@ def main():
 
                         # 检查游戏是否结束
                         status, message = board.is_game_over()
-                        if status != "in_progress":
+                        if status != 'in_progress':
                             game_over = True
                             game_result_message = message
                         else:
@@ -144,7 +151,7 @@ def main():
                             overlay = pygame.Surface((SCREEN_WIDTH, 100), pygame.SRCALPHA)
                             overlay.fill((255, 255, 255, 220))
                             screen.blit(overlay, (0, SCREEN_HEIGHT / 2 - 100 / 2))
-                            think_text = font.render("Engine is thinking...", True, (0, 0, 0))
+                            think_text = font.render('Engine is thinking...', True, (0, 0, 0))
                             text_rect = think_text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
                             screen.blit(think_text, text_rect)
                             pygame.display.flip()
@@ -158,7 +165,7 @@ def main():
 
                                 # 检查游戏是否结束
                                 status, message = board.is_game_over()
-                                if status != "in_progress":
+                                if status != 'in_progress':
                                     game_over = True
                                     game_result_message = message
                     else:
@@ -186,5 +193,5 @@ def main():
     sys.exit()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

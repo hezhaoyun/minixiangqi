@@ -18,10 +18,11 @@ zobrist_keys: List[List[List[int]]] = [[[0] * BOARD_WIDTH for _ in range(BOARD_H
 # 用于标识轮到哪一方走棋的Zobrist键
 zobrist_player: int = 0
 
+
 def init_zobrist():
-    """
+    '''
     初始化Zobrist键表, 为每个位置上的每个棋子类型生成一个唯一的64位随机数
-    """
+    '''
     global zobrist_player, zobrist_keys
     # 使用固定的种子以保证每次运行生成的随机数相同，方便调试
     random.seed(0)
@@ -32,6 +33,7 @@ def init_zobrist():
                 zobrist_keys[i][r][c] = random.getrandbits(64)
 
     zobrist_player = random.getrandbits(64)
+
 
 # 在模块加载时自动初始化
 init_zobrist()

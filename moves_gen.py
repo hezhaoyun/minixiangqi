@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-"""
+'''
 中国象棋走法生成器
-"""
+'''
 
 from typing import List, Optional
 
@@ -15,11 +15,11 @@ from constants import (
 
 
 def generate_moves(board: b.Board) -> List[b.Move]:
-    """
+    '''
     为指定玩家生成所有合法走法
     :param board: Board 对象
     :return: 一个包含所有走法的列表
-    """
+    '''
     pseudo_legal_moves = []
     board_state = board.board
     player = board.player
@@ -46,7 +46,7 @@ def generate_moves(board: b.Board) -> List[b.Move]:
 
 
 def get_piece_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
-    """获取单个棋子的所有走法"""
+    '''获取单个棋子的所有走法'''
     piece = board_state[r][c]
     piece_type = abs(piece)
 
@@ -236,9 +236,9 @@ def get_pawn_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
 
 
 def order_moves(board_state: b.BoardState, moves: List[b.Move], best_move_from_tt: Optional[b.Move] = None) -> List[b.Move]:
-    """
+    '''
     对着法列表进行排序，以优化Alpha-Beta剪枝效率。
-    """
+    '''
     move_scores = {}
     CAPTURE_BONUS = 10000
 
@@ -263,9 +263,9 @@ def order_moves(board_state: b.BoardState, moves: List[b.Move], best_move_from_t
 
 
 def generate_capture_moves(board: b.Board) -> List[b.Move]:
-    """
+    '''
     为指定玩家生成所有只吃子的走法
-    """
+    '''
     capture_moves = []
     board_state = board.board
 
@@ -282,12 +282,12 @@ def generate_capture_moves(board: b.Board) -> List[b.Move]:
 if __name__ == '__main__':
     initial_board = b.Board()
     red_moves = generate_moves(initial_board)
-    print(f"初始局面, 红方共有 {len(red_moves)} 种走法:")
+    print(f'初始局面, 红方共有 {len(red_moves)} 种走法:')
     for move in red_moves[:10]:
-        print(f"  棋子 {initial_board.board[move[0][0]][move[0][1]]} 从 {move[0]} 移动到 {move[1]}")
+        print(f'  棋子 {initial_board.board[move[0][0]][move[0][1]]} 从 {move[0]} 移动到 {move[1]}')
 
     initial_board.player = PLAYER_B
     black_moves = generate_moves(initial_board)
-    print(f"\n初始局面, 黑方共有 {len(black_moves)} 种走法:")
+    print(f'\n初始局面, 黑方共有 {len(black_moves)} 种走法:')
     for move in black_moves[:10]:
-        print(f"  棋子 {initial_board.board[move[0][0]][move[0][1]]} 从 {move[0]} 移动到 {move[1]}")
+        print(f'  棋子 {initial_board.board[move[0][0]][move[0][1]]} 从 {move[0]} 移动到 {move[1]}')

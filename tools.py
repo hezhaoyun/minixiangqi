@@ -8,7 +8,7 @@ from constants import (
 
 
 def print_board_text(board: b.Board, last_move: b.Move = None):
-    """以文本形式打印棋盘,并用颜色区分红黑双方"""
+    '''以文本形式打印棋盘,并用颜色区分红黑双方'''
 
     # ANSI color codes
     END_COLOR = '\033[0m'
@@ -26,11 +26,11 @@ def print_board_text(board: b.Board, last_move: b.Move = None):
 
     fp, tp = (last_move[0], last_move[1]) if last_move else (None, None)
 
-    print("\n   0  1  2  3  4  5  6  7  8")
-    print("-----------------------------")
+    print('\n   0  1  2  3  4  5  6  7  8')
+    print('-----------------------------')
 
     for r, row in enumerate(board.board):
-        row_items = [f"{r}|"]
+        row_items = [f'{r}|']
 
         for c, piece in enumerate(row):
 
@@ -46,8 +46,8 @@ def print_board_text(board: b.Board, last_move: b.Move = None):
             elif piece < 0:
                 color = HL_BLUE_COLOR if hl else BLUE_COLOR
 
-            row_items.append(f"{color}{char}{END_COLOR}")
+            row_items.append(f'{color}{char}{END_COLOR}')
 
-        print(" ".join(row_items))
+        print(' '.join(row_items))
 
-    print("-----------------------------")
+    print('-----------------------------')

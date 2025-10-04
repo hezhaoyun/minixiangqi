@@ -20,7 +20,7 @@ TT_UPPER = 2  # Beta值 (Fail-Low)
 
 
 class StopSearchException(Exception):
-    """自定义异常, 用于在时间用尽时中止搜索."""
+    '''自定义异常, 用于在时间用尽时中止搜索.'''
     pass
 
 
@@ -35,22 +35,22 @@ class Engine:
         self._load_opening_book()
 
     def _load_opening_book(self):
-        """加载开局库文件."""
+        '''加载开局库文件.'''
         try:
             with open('opening_book.json', 'r') as f:
                 book_str_keys = json.load(f)
                 # JSON keys are strings, convert them to int
                 self.opening_book = {int(k): [tuple(map(tuple, move)) for move in v] for k, v in book_str_keys.items()}
-            print("开局库加载成功。")
+            print('开局库加载成功。')
         except FileNotFoundError:
-            print("未找到开局库文件, 将不使用开局库。")
+            print('未找到开局库文件, 将不使用开局库。')
             self.opening_book = None
         except Exception as e:
-            print(f"加载开局库时发生错误: {e}")
+            print(f'加载开局库时发生错误: {e}')
             self.opening_book = None
 
     def query_opening_book(self, board: b.Board) -> Optional[b.Move]:
-        """在开局库中查询当前局面."""
+        '''在开局库中查询当前局面.'''
         if not self.opening_book:
             return None
 
@@ -65,15 +65,15 @@ class Engine:
         return None
 
     def _check_time(self):
-        """每隔2048个节点检查一次时间, 如果超时则抛出异常."""
+        '''每隔2048个节点检查一次时间, 如果超时则抛出异常.'''
         if (self.nodes_searched & 2047) == 0:  # 高效的取模操作
             if self.time_limit > 0 and time.time() - self.start_time >= self.time_limit:
                 raise StopSearchException()
 
     def _quiescence_search(self, board: b.Board, alpha: float, beta: float) -> Tuple[float, Optional[b.Move]]:
-        """
+        '''
         静态搜索, 用于处理不稳定的局面 (主要指吃子), 以避免地平线效应.
-        """
+        '''
         self.nodes_searched += 1
         self._check_time()
 
@@ -102,17 +102,17 @@ class Engine:
         return alpha, None
 
     def _negamax(self, board: b.Board, depth: int, alpha: float, beta: float) -> Tuple[float, Optional[b.Move]]:
-        """
+        '''
         使用 Negamax 算法结合 Alpha-Beta 剪枝和置换表来搜索. 
-        """
+        '''
         self.nodes_searched += 1
         self._check_time()
 
         # 游戏结束判断
         status, _ = board.is_game_over()
-        if status == "checkmate":
+        if status == 'checkmate':
             return -constants.MATE_VALUE, None
-        if status == "stalemate":
+        if status == 'stalemate':
             return constants.DRAW_VALUE, None
 
         original_alpha = alpha
@@ -184,14 +184,14 @@ class Engine:
         return best_value, best_move
 
     def search_by_depth(self, board: b.Board, depth: int) -> Tuple[float, Optional[b.Move]]:
-        """
+        '''
         执行迭代深化搜索.
         从深度1开始, 迭代搜索到指定的深度.
         这样可以更好地利用置换表, 并允许未来的时间控制.
-        """
+        '''
         book_move = self.query_opening_book(board)
         if book_move:
-            print(f"Opening book move: {book_move}")
+            print(f'Opening book move: {book_move}')
             return 0, book_move
 
         board_copy = board.copy()
@@ -209,12 +209,12 @@ class Engine:
         return final_score, best_move
 
     def search_by_time(self, board: b.Board, time_limit_seconds: float) -> Tuple[float, Optional[b.Move]]:
-        """
+        '''
         执行基于时间限制的迭代深化搜索.
-        """
+        '''
         book_move = self.query_opening_book(board)
         if book_move:
-            print(f"Opening book move: {book_move}")
+            print(f'Opening book move: {book_move}')
             return 0, book_move
 
         board_copy = board.copy()
