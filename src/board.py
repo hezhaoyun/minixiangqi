@@ -5,10 +5,8 @@
 '''
 from typing import List, Optional, Tuple
 
-import zobrist
-from constants import (B_BISHOP, B_CANNON, B_GUARD, B_HORSE, B_KING, B_PAWN,
-                       B_ROOK, EMPTY, PLAYER_B, PLAYER_R, R_BISHOP, R_CANNON,
-                       R_GUARD, R_HORSE, R_KING, R_PAWN, R_ROOK)
+from src.zobrist import zobrist_keys, zobrist_player
+from src.constants import *
 
 # 类型别名
 Move = Tuple[Tuple[int, int], Tuple[int, int]]
@@ -140,10 +138,10 @@ class Board:
                 piece = self.board[r][c]
                 if piece != EMPTY:
                     idx = piece_to_zobrist_idx(piece)
-                    h ^= zobrist.zobrist_keys[idx][r][c]
+                    h ^= zobrist_keys[idx][r][c]
 
         if self.player == PLAYER_B:
-            h ^= zobrist.zobrist_player
+            h ^= zobrist_player
         return h
 
     def make_move(self, move: Move) -> int:
@@ -163,14 +161,14 @@ class Board:
 
         # Update hash key
         moving_idx = piece_to_zobrist_idx(moving_piece)
-        self.hash_key ^= zobrist.zobrist_keys[moving_idx][from_r][from_c]
+        self.hash_key ^= zobrist_keys[moving_idx][from_r][from_c]
 
         if captured_piece != EMPTY:
             captured_idx = piece_to_zobrist_idx(captured_piece)
-            self.hash_key ^= zobrist.zobrist_keys[captured_idx][to_r][to_c]
+            self.hash_key ^= zobrist_keys[captured_idx][to_r][to_c]
 
-        self.hash_key ^= zobrist.zobrist_keys[moving_idx][to_r][to_c]
-        self.hash_key ^= zobrist.zobrist_player
+        self.hash_key ^= zobrist_keys[moving_idx][to_r][to_c]
+        self.hash_key ^= zobrist_player
 
         # Update board state
         self.board[to_r][to_c] = moving_piece
@@ -196,15 +194,15 @@ class Board:
             self.piece_list[captured_player].append((to_r, to_c))
 
         # XORing twice restores the original value
-        self.hash_key ^= zobrist.zobrist_player
+        self.hash_key ^= zobrist_player
         moving_idx = piece_to_zobrist_idx(moving_piece)
-        self.hash_key ^= zobrist.zobrist_keys[moving_idx][to_r][to_c]
+        self.hash_key ^= zobrist_keys[moving_idx][to_r][to_c]
 
         if captured_piece != EMPTY:
             captured_idx = piece_to_zobrist_idx(captured_piece)
-            self.hash_key ^= zobrist.zobrist_keys[captured_idx][to_r][to_c]
+            self.hash_key ^= zobrist_keys[captured_idx][to_r][to_c]
 
-        self.hash_key ^= zobrist.zobrist_keys[moving_idx][from_r][from_c]
+        self.hash_key ^= zobrist_keys[moving_idx][from_r][from_c]
 
         # Restore board state
         self.board[from_r][from_c] = moving_piece
@@ -264,11 +262,15 @@ class Board:
         for dr, dc in [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2)]:
             nr, nc = r + dr, c + dc
             if is_valid_pos(nr, nc) and self.board[nr][nc] == horse_piece:
-                leg_r, leg_c = r, c
-                if abs(dr) == 2:
-                    leg_r += dr // 2
-                else:
-                    leg_c += dc // 2
+                # 检查马腿是否被别住
+                # 马腿的位置是马的起始点(nr, nc)和目标点(r, c)之间的中间点
+                if abs(dr) == 2:  # 竖直方向的“日”字
+                    leg_r = nr - dr // 2
+                    leg_c = nc
+                else:  # 水平方向的“日”字
+                    leg_r = nr
+                    leg_c = nc - dc // 2
+                
                 if self.board[leg_r][leg_c] == EMPTY:
                     return True
 
@@ -313,9 +315,9 @@ class Board:
         return False
 
     def is_game_over(self):
-        import moves_gen
+        from src.moves_gen import generate_moves
         # 生成所有合法走法
-        moves = moves_gen.generate_moves(self)
+        moves = generate_moves(self)
 
         # 如果没有合法走法，游戏结束
         if len(moves) == 0:

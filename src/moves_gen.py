@@ -6,15 +6,11 @@
 
 from typing import List, Optional
 
-import board as b
-from board import get_player, is_valid_pos
-from constants import (
-    EMPTY, PLAYER_B, PLAYER_R, R_BISHOP, R_CANNON, R_GUARD, R_HORSE, R_KING,
-    R_PAWN, R_ROOK, PIECE_VALUES
-)
+from src.board import BoardState, Board, Move, get_player, is_valid_pos
+from src.constants import *
 
 
-def generate_moves(board: b.Board) -> List[b.Move]:
+def generate_moves(board: Board) -> List[Move]:
     '''
     为指定玩家生成所有合法走法
     :param board: Board 对象
@@ -31,6 +27,9 @@ def generate_moves(board: b.Board) -> List[b.Move]:
     for move in pseudo_legal_moves:
         captured_piece = board.make_move(move)
 
+        if move == ((8, 4), (8, 3)):
+            pass
+
         # 切换到对手视角来检查攻击
         board.player *= -1
 
@@ -45,7 +44,7 @@ def generate_moves(board: b.Board) -> List[b.Move]:
     return legal_moves
 
 
-def get_piece_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
+def get_piece_moves(board_state: BoardState, r: int, c: int) -> List[Move]:
     '''获取单个棋子的所有走法'''
     piece = board_state[r][c]
     piece_type = abs(piece)
@@ -68,7 +67,7 @@ def get_piece_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
     return []
 
 
-def get_king_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
+def get_king_moves(board_state: BoardState, r: int, c: int) -> List[Move]:
     moves = []
     player = get_player(board_state[r][c])
 
@@ -106,7 +105,7 @@ def get_king_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
     return moves
 
 
-def get_guard_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
+def get_guard_moves(board_state: BoardState, r: int, c: int) -> List[Move]:
     moves = []
     player = get_player(board_state[r][c])
     palace_r = (0, 3) if player == PLAYER_B else (7, 10)
@@ -121,7 +120,7 @@ def get_guard_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
     return moves
 
 
-def get_bishop_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
+def get_bishop_moves(board_state: BoardState, r: int, c: int) -> List[Move]:
     moves = []
     player = get_player(board_state[r][c])
     river_r = 4 if player == PLAYER_B else 5
@@ -142,7 +141,7 @@ def get_bishop_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
     return moves
 
 
-def get_horse_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
+def get_horse_moves(board_state: BoardState, r: int, c: int) -> List[Move]:
     moves = []
     player = get_player(board_state[r][c])
 
@@ -165,7 +164,7 @@ def get_horse_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
     return moves
 
 
-def get_rook_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
+def get_rook_moves(board_state: BoardState, r: int, c: int) -> List[Move]:
     moves = []
     player = get_player(board_state[r][c])
 
@@ -186,7 +185,7 @@ def get_rook_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
     return moves
 
 
-def get_cannon_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
+def get_cannon_moves(board_state: BoardState, r: int, c: int) -> List[Move]:
     moves = []
     player = get_player(board_state[r][c])
 
@@ -212,7 +211,7 @@ def get_cannon_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
     return moves
 
 
-def get_pawn_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
+def get_pawn_moves(board_state: BoardState, r: int, c: int) -> List[Move]:
     moves = []
     player = get_player(board_state[r][c])
     forward_dr = 1 if player == PLAYER_B else -1
@@ -235,7 +234,7 @@ def get_pawn_moves(board_state: b.BoardState, r: int, c: int) -> List[b.Move]:
     return moves
 
 
-def order_moves(board_state: b.BoardState, moves: List[b.Move], best_move_from_tt: Optional[b.Move] = None) -> List[b.Move]:
+def order_moves(board_state: BoardState, moves: List[Move], best_move_from_tt: Optional[Move] = None) -> List[Move]:
     '''
     对着法列表进行排序，以优化Alpha-Beta剪枝效率。
     '''
@@ -262,7 +261,7 @@ def order_moves(board_state: b.BoardState, moves: List[b.Move], best_move_from_t
     return sorted(moves, key=lambda m: move_scores[m], reverse=True)
 
 
-def generate_capture_moves(board: b.Board) -> List[b.Move]:
+def generate_capture_moves(board: Board) -> List[Move]:
     '''
     为指定玩家生成所有只吃子的走法
     '''
@@ -280,7 +279,7 @@ def generate_capture_moves(board: b.Board) -> List[b.Move]:
 
 
 if __name__ == '__main__':
-    initial_board = b.Board()
+    initial_board = Board()
     red_moves = generate_moves(initial_board)
     print(f'初始局面, 红方共有 {len(red_moves)} 种走法:')
     for move in red_moves[:10]:

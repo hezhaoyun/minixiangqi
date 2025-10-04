@@ -5,11 +5,8 @@
 '''
 from typing import List
 
-import board
-from constants import (
-    EMPTY, B_KING, B_GUARD, B_BISHOP, B_HORSE, B_ROOK, B_CANNON, B_PAWN,
-    R_KING, R_GUARD, R_BISHOP, R_HORSE, R_ROOK, R_CANNON, R_PAWN, PIECE_VALUES
-)
+from src.board import Board
+from src.constants import *
 
 # --- Piece-Square Tables (PST) ---
 # fmt: off
@@ -107,7 +104,7 @@ PST = {
 }
 
 
-def evaluate(current_board: board.Board) -> int:
+def evaluate(current_board: Board) -> int:
     '''
     评估函数
     :param current_board: Board 对象
@@ -118,13 +115,13 @@ def evaluate(current_board: board.Board) -> int:
 
     # 通过遍历 piece_list 来优化, 而不是遍历整个棋盘
     # 红方
-    for r, c in current_board.piece_list[board.PLAYER_R]:
+    for r, c in current_board.piece_list[PLAYER_R]:
         piece = board_state[r][c]
         score += PIECE_VALUES[piece]
         score += PST[piece][9 - r][8 - c]
 
     # 黑方
-    for r, c in current_board.piece_list[board.PLAYER_B]:
+    for r, c in current_board.piece_list[PLAYER_B]:
         piece = board_state[r][c]
         score += PIECE_VALUES[piece]
         score -= PST[piece][r][c]
@@ -134,13 +131,13 @@ def evaluate(current_board: board.Board) -> int:
 
 if __name__ == '__main__':
     # 示例: 评估初始局面
-    initial_board = board.Board()
+    initial_board = Board()
     initial_score = evaluate(initial_board)
 
     print('初始局面评估分数:', initial_score)
 
     # 示例: 红方开局左炮打马后评估分数
-    board_without_b_rook = board.Board()
+    board_without_b_rook = Board()
     board_without_b_rook.make_move(((7, 1), (0, 1)))
     score_after_capture = evaluate(board_without_b_rook)
 

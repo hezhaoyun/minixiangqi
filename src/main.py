@@ -1,9 +1,10 @@
 
 import pygame
 import sys
-from board import Board
-from engine import Engine
-import moves_gen
+import os
+from src.board import Board
+from src.engine import Engine
+from src.moves_gen import generate_moves
 import pygame.gfxdraw
 
 # --- Constants ---
@@ -17,7 +18,8 @@ PIECE_RADIUS = 25
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Mini Xiangqi (R: Resart, U: Undo, T: Test FEN)')
-font = pygame.font.Font('SimHei.ttf', 24)
+font_path = os.path.join(os.path.dirname(__file__), "assets", "SimHei.ttf")
+font = pygame.font.Font(font_path, 24)
 
 # --- Game State ---
 board = Board()
@@ -93,7 +95,8 @@ def main():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_t:  # Test FEN init position
-                    board = Board('r4k3/9/9/9/9/4R4/9/9/9/4K4 w - - 0 1')
+                    # board = Board('r4k3/9/9/9/9/4R4/9/9/9/4K4 w - - 0 1')
+                    board = Board('3aka2r/4n4/9/p5p1p/c1R1p4/4P1P2/P7P/N1CnB4/4C4/2BAKA3 w - - 0 1')
                     selected_piece_pos = None
                     last_move = None
                     move_history = []
@@ -127,7 +130,7 @@ def main():
                 if selected_piece_pos:
                     from_r, from_c = selected_piece_pos
                     move = ((from_r, from_c), (r, c))
-                    legal_moves = moves_gen.generate_moves(board)
+                    legal_moves = generate_moves(board)
 
                     if move in legal_moves:
                         captured_piece = board.make_move(move)

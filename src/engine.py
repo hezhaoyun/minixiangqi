@@ -6,11 +6,10 @@ import json
 import random
 from typing import Dict, Optional, Tuple
 
-import board as b
-import evaluate
-import moves_gen
-
-import constants
+import src.board as b
+from src.evaluate import evaluate
+from src.moves_gen import generate_moves, generate_capture_moves, order_moves
+from src.constants import *
 
 # 置换表条目的标志
 TT_EXACT = 0  # 精确值 (PV-Node)
@@ -57,7 +56,7 @@ class Engine:
         if key in self.opening_book:
             moves = self.opening_book[key]
             # 验证走法是否合法
-            legal_moves = moves_gen.generate_moves(board)
+            legal_moves = generate_moves(board)
             valid_book_moves = [move for move in moves if move in legal_moves]
             if valid_book_moves:
                 return self.book_random.choice(valid_book_moves)
@@ -76,15 +75,15 @@ class Engine:
         self.nodes_searched += 1
         self._check_time()
 
-        stand_pat_score = evaluate.evaluate(board) * board.player
+        stand_pat_score = evaluate(board) * board.player
 
         if stand_pat_score >= beta:
             return stand_pat_score, None
 
         alpha = max(alpha, stand_pat_score)
 
-        capture_moves = moves_gen.generate_capture_moves(board)
-        ordered_moves = moves_gen.order_moves(board.board, capture_moves, None)
+        capture_moves = generate_capture_moves(board)
+        ordered_moves = order_moves(board.board, capture_moves, None)
 
         for move in ordered_moves:
             captured_piece = board.make_move(move)
@@ -110,9 +109,9 @@ class Engine:
         # 游戏结束判断
         status, _ = board.is_game_over()
         if status == 'checkmate':
-            return -constants.MATE_VALUE, None
+            return -MATE_VALUE, None
         if status == 'stalemate':
-            return constants.DRAW_VALUE, None
+            return DRAW_VALUE, None
 
         original_alpha = alpha
         tt_entry = self.tt.get(board.hash_key)
@@ -138,8 +137,8 @@ class Engine:
         best_value, best_move = -math.inf, None
         best_move_from_tt = tt_entry.get('best_move') if tt_entry else None
 
-        moves = moves_gen.generate_moves(board)
-        ordered_moves = moves_gen.order_moves(board.board, moves, best_move_from_tt)
+        moves = generate_moves(board)
+        ordered_moves = order_moves(board.board, moves, best_move_from_tt)
 
         if not ordered_moves:
             return -math.inf, None
