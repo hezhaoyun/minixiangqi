@@ -7,7 +7,7 @@ from src.moves_gen import generate_moves
 from src.constants import *
 
 # 开局库数据源目录
-DATA_SOURCE_DIR = 'xq_data/data/opening'
+DATA_SOURCE_DIR = 'external/xq_data/data/opening'
 # 生成的开局库文件名
 OUTPUT_FILE = 'opening_book.json'
 # 开局库记录的最大步数

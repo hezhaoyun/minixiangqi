@@ -41,6 +41,16 @@ The engine implements a comprehensive suite of technologies that form the backbo
 
 ---
 
+## Project Structure (项目结构)
+
+The project is organized into two main parts: the core engine source code and external dependencies managed as Git submodules.
+
+- **`/src`**: Contains all the Python source code for the Xiangqi engine itself, including search algorithms, evaluation functions, and board representation.
+- **`/scripts`**: Includes utility scripts, such as `create_opening_book.py`, which processes data to generate the engine's opening book.
+- **`/external/xq_data`**: A Git submodule containing a large community-maintained database of Xiangqi game records. This data is used by the `create_opening_book.py` script to build a comprehensive opening library for the engine.
+
+---
+
 ## Getting Started (如何开始)
 
 1.  **Clone the repository & submodules:**
