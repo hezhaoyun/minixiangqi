@@ -133,29 +133,31 @@ class Bitboard:
 
     def unmove_piece(self, from_sq: int, to_sq: int, captured_piece: int):
         self.history.pop()
-        moving_piece = self.get_piece_on_square(to_sq) # Piece is at its new location
+        # The moving piece is currently at to_sq, we are moving it back to from_sq
+        moving_piece = self.get_piece_on_square(to_sq)
         r_from, c_from = from_sq // 9, from_sq % 9
         r_to, c_to = to_sq // 9, to_sq % 9
 
-        # 1. Update player and hash
+        # 1. Revert player to move FIRST, this is crucial for hash calculation
         self.player_to_move *= -1
-        self.hash_key ^= zobrist_player # Revert player hash
+        self.hash_key ^= zobrist_player
 
-        # 2. Revert moving piece bitboards
+        # 2. Move the piece back from to_sq to from_sq
         move_mask = SQUARE_MASKS[from_sq] | SQUARE_MASKS[to_sq]
         self.piece_bitboards[PIECE_TO_BB_INDEX[moving_piece]] ^= move_mask
         self.color_bitboards[self.get_player_bb_idx(self.player_to_move)] ^= move_mask
-
-        # 3. Revert moving piece hash
+        # Update hash for the move
         moving_z_idx = Bitboard.piece_to_zobrist_idx(moving_piece)
         self.hash_key ^= zobrist_keys[moving_z_idx][r_from][c_from]
         self.hash_key ^= zobrist_keys[moving_z_idx][r_to][c_to]
 
-        # 4. If there was a capture, restore the captured piece
+        # 3. If a piece was captured, put it back on to_sq
         if captured_piece != EMPTY:
             capture_mask = SQUARE_MASKS[to_sq]
+            captured_player = Bitboard.get_player(captured_piece)
             self.piece_bitboards[PIECE_TO_BB_INDEX[captured_piece]] |= capture_mask
-            self.color_bitboards[self.get_player_bb_idx(Bitboard.get_player(captured_piece))] |= capture_mask
+            self.color_bitboards[self.get_player_bb_idx(captured_player)] |= capture_mask
+            # Update hash for the captured piece that is being restored
             captured_z_idx = Bitboard.piece_to_zobrist_idx(captured_piece)
             self.hash_key ^= zobrist_keys[captured_z_idx][r_to][c_to]
 
@@ -182,6 +184,29 @@ class Bitboard:
             row_str = [PIECE_TO_FEN_CHAR.get(self.get_piece_on_square(r * 9 + c), '.') for c in range(9)]
             builder.append(" ".join(row_str))
         return "\n".join(builder)
+
+    def to_fen(self) -> str:
+        fen_parts = []
+        for r in range(10):
+            empty_count = 0
+            row_str = ""
+            for c in range(9):
+                piece = self.get_piece_on_square(r * 9 + c)
+                if piece == EMPTY:
+                    empty_count += 1
+                else:
+                    if empty_count > 0:
+                        row_str += str(empty_count)
+                        empty_count = 0
+                    row_str += PIECE_TO_FEN_CHAR[piece]
+            if empty_count > 0:
+                row_str += str(empty_count)
+            fen_parts.append(row_str)
+        
+        board_fen = "/".join(fen_parts)
+        player_fen = 'w' if self.player_to_move == PLAYER_R else 'b'
+        # Placeholder for castling, en passant, halfmove, fullmove
+        return f"{board_fen} {player_fen} - - 0 1"
 
     def copy(self):
         new_bb = Bitboard()

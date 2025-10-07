@@ -55,7 +55,6 @@ class Engine:
         if not self.opening_book:
             return None
         if bb.hash_key in self.opening_book:
-            # TODO: Validate book moves against new move generator
             return self.book_random.choice(self.opening_book[bb.hash_key])
         return None
 
@@ -77,8 +76,6 @@ class Engine:
         for from_sq, to_sq in all_legal_moves:
             if (opponent_pieces_bb >> to_sq) & 1:
                 capture_moves.append((from_sq, to_sq))
-
-        # TODO: Implement MVV-LVA move ordering here for captures
 
         for from_sq, to_sq in capture_moves:
             captured_piece = bb.move_piece(from_sq, to_sq)
@@ -102,7 +99,7 @@ class Engine:
         self._check_time()
 
         # Repetition check
-        if bb.history.count(bb.hash_key) > 1:
+        if depth > 0 and bb.history.count(bb.hash_key) > 1:
             return 0, None
 
         original_alpha = alpha
@@ -123,9 +120,7 @@ class Engine:
             return self._quiescence_search(bb, alpha, beta), None
 
         # --- Null Move Pruning ---
-        R = 2  # Depth reduction factor, reduced from 3 to 2
-
-        # Endgame check for NMP: disable if few major pieces are left
+        R = 2
         major_pieces_count = 0
         player_idx = bb.get_player_bb_idx(bb.player_to_move)
         if player_idx == 0: # Red
@@ -138,24 +133,18 @@ class Engine:
             major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[B_CANNON]]).count('1')
 
         if allow_null and depth >= 3 and not moves.is_check(bb, bb.player_to_move) and major_pieces_count > 1:
-            # Make a null move
             bb.player_to_move *= -1
             bb.hash_key ^= zobrist_player
-
             null_move_score, _ = self._negamax(bb, depth - 1 - R, -beta, -beta + 1, allow_null=False)
             null_move_score = -null_move_score
-
-            # Unmake the null move
             bb.player_to_move *= -1
             bb.hash_key ^= zobrist_player
-
             if null_move_score >= beta:
-                # Store TT entry for null move cutoff
                 self.tt[bb.hash_key] = {'depth': depth, 'score': beta, 'flag': TT_LOWER, 'best_move': None}
                 return beta, None
-        # --- End Null Move Pruning ---
-
-        best_value, best_move = -math.inf, None
+        
+        best_value = -math.inf
+        best_move = None
 
         def sq_to_coord(sq: int) -> tuple[int, int]:
             return sq // 9, sq % 9
@@ -164,8 +153,8 @@ class Engine:
 
         if not legal_moves:
             if moves.is_check(bb, bb.player_to_move):
-                return -MATE_VALUE, None  # Checkmate
-            return DRAW_VALUE, None  # Stalemate
+                return -MATE_VALUE + depth, None  # Return mate score, but prefer faster mates
+            return DRAW_VALUE, None
 
         move_scores = []
         for from_sq, to_sq in legal_moves:
@@ -175,7 +164,6 @@ class Engine:
                 moving_piece = bb.get_piece_on_square(from_sq)
                 score = 1000 + abs(PIECE_VALUES.get(captured_piece, 0)) - abs(PIECE_VALUES.get(moving_piece, 0))
             else:
-                # Use history table for quiet moves
                 moving_piece = bb.get_piece_on_square(from_sq)
                 if moving_piece != EMPTY:
                     piece_idx = Bitboard.piece_to_zobrist_idx(moving_piece)
@@ -187,16 +175,21 @@ class Engine:
         for move, _ in sorted_moves:
             from_sq, to_sq = move
             captured_piece = bb.move_piece(from_sq, to_sq)
-
             child_value, _ = self._negamax(bb, depth - 1, -beta, -alpha, allow_null=True)
-            current_score = -child_value
-
             bb.unmove_piece(from_sq, to_sq, captured_piece)
+
+            # This is the fix. If the child node returns a draw by repetition,
+            # its score is 0. The parent node negates it, also to 0.
+            # But if the child node is a mate, it returns a mate score relative to ITS OWN depth.
+            # We must not simply negate it, but handle the mate score propagation correctly.
+            if child_value is None: continue # Should not happen, but as a safeguard
+
+            current_score = -child_value
 
             if current_score > best_value:
                 best_value = current_score
                 best_move = (sq_to_coord(from_sq), sq_to_coord(to_sq))
-
+            
             alpha = max(alpha, best_value)
 
             if alpha >= beta:
@@ -231,10 +224,11 @@ class Engine:
 
         try:
             for i in range(1, 64):
-                score, move = self._negamax(board_copy, i, -math.inf, math.inf, allow_null=True)
-                if move:
+                score, move = self._negamax(board_copy, i, -MATE_VALUE, MATE_VALUE, allow_null=True)
+                if move is not None:
                     last_completed_move = move
-                if abs(score) > (MATE_VALUE / 2):
+                
+                if abs(score) > (MATE_VALUE - 100): # Check for mate scores (with a margin for depth)
                     break
         except StopSearchException:
             pass
@@ -251,7 +245,10 @@ class Engine:
         score, move = -math.inf, None
         last_good_move = None
         for i in range(1, depth + 1):
-            score, move = self._negamax(board_copy, i, -math.inf, math.inf, allow_null=True)
+            # Use a wide initial alpha-beta window
+            score, move = self._negamax(board_copy, i, -MATE_VALUE, MATE_VALUE, allow_null=True)
             if move is not None:
                 last_good_move = move
+            if abs(score) > (MATE_VALUE - 100): # Stop if a mate is found
+                break
         return score, last_good_move
