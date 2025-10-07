@@ -120,7 +120,7 @@ class Engine:
             return self._quiescence_search(bb, alpha, beta), None
 
         # --- Null Move Pruning ---
-        R = 3
+        R = 3 + depth // 6
         major_pieces_count = 0
         player_idx = bb.get_player_bb_idx(bb.player_to_move)
         if player_idx == 0:  # Red
@@ -132,7 +132,9 @@ class Engine:
             major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[B_HORSE]]).count('1')
             major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[B_CANNON]]).count('1')
 
-        if allow_null and depth >= 3 and not moves.is_check(bb, bb.player_to_move) and major_pieces_count > 1:
+        is_in_check = moves.is_check(bb, bb.player_to_move)
+
+        if allow_null and not is_in_check and depth >= 3 and major_pieces_count > 1:
             bb.player_to_move *= -1
             bb.hash_key ^= zobrist_player
             null_move_score, _ = self._negamax(bb, depth - 1 - R, -beta, -beta + 1, allow_null=False)
@@ -152,7 +154,7 @@ class Engine:
         legal_moves = moves.generate_moves(bb)
 
         if not legal_moves:
-            if moves.is_check(bb, bb.player_to_move):
+            if is_in_check:
                 return -MATE_VALUE + depth, None  # Return mate score, but prefer faster mates
             return DRAW_VALUE, None
 
@@ -172,18 +174,32 @@ class Engine:
 
         sorted_moves = sorted(move_scores, key=lambda x: x[1], reverse=True)
 
+        move_index = 0
         for move, _ in sorted_moves:
+            move_index += 1
             from_sq, to_sq = move
+            
+            captured_piece_on_sq = bb.get_piece_on_square(to_sq)
+            is_quiet = captured_piece_on_sq == EMPTY
+
+            # --- Late Move Reduction (LMR) ---
+            reduction = 0
+            if depth >= 3 and move_index > 4 and is_quiet and not is_in_check:
+                reduction = 1
+
             captured_piece = bb.move_piece(from_sq, to_sq)
-            child_value, _ = self._negamax(bb, depth - 1, -beta, -alpha, allow_null=True)
+            
+            # Search with or without reduction
+            child_value, _ = self._negamax(bb, depth - 1 - reduction, -beta, -alpha, allow_null=True)
+
+            # If reduced search was good, re-search with full depth
+            if reduction > 0 and -child_value > alpha:
+                child_value, _ = self._negamax(bb, depth - 1, -beta, -alpha, allow_null=True)
+
             bb.unmove_piece(from_sq, to_sq, captured_piece)
 
-            # This is the fix. If the child node returns a draw by repetition,
-            # its score is 0. The parent node negates it, also to 0.
-            # But if the child node is a mate, it returns a mate score relative to ITS OWN depth.
-            # We must not simply negate it, but handle the mate score propagation correctly.
             if child_value is None:
-                continue  # Should not happen, but as a safeguard
+                continue
 
             current_score = -child_value
 
@@ -194,7 +210,7 @@ class Engine:
             alpha = max(alpha, best_value)
 
             if alpha >= beta:
-                if captured_piece == EMPTY:
+                if is_quiet:
                     moving_piece = bb.get_piece_on_square(from_sq)
                     if moving_piece != EMPTY:
                         piece_idx = Bitboard.piece_to_zobrist_idx(moving_piece)
