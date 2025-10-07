@@ -25,15 +25,20 @@ PIECE_TO_BB_INDEX = {
 }
 BB_INDEX_TO_PIECE = {v: k for k, v in PIECE_TO_BB_INDEX.items()}
 
-    @staticmethod
-    def piece_to_zobrist_idx(piece: int) -> int:
-        if piece < 0: return abs(piece) - 1
-        elif piece > 0: return piece + 6
-        return -1
-
-    @staticmethod
 
 class Bitboard:
+    @staticmethod
+    def get_player(piece: int) -> int:
+        return PLAYER_R if piece > 0 else PLAYER_B
+
+    @staticmethod
+    def piece_to_zobrist_idx(piece: int) -> int:
+        if piece < 0:
+            return abs(piece) - 1
+        elif piece > 0:
+            return piece + 6
+        return -1
+
     def __init__(self, fen: Optional[str] = None):
         self.piece_bitboards = [0] * 14
         self.color_bitboards = [0] * 2
