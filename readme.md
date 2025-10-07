@@ -1,4 +1,4 @@
-# MiniXiangqi: A Modern Chinese Chess Engine
+# Xiangqi: A Modern Chinese Chess Engine
 ## A powerful Xiangqi AI for developers and enthusiasts.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -9,13 +9,13 @@
 
 ### English
 
-**MiniXiangqi** is a modern Chinese Chess (Xiangqi) engine built from the ground up as a learning and research project. It began as a simple implementation of the NegaMax search algorithm and has since evolved to incorporate a wide range of advanced techniques found in state-of-the-art chess engines.
+**Xiangqi** is a modern Chinese Chess (Xiangqi) engine built from the ground up as a learning and research project. It began as a simple implementation of the NegaMax search algorithm and has since evolved to incorporate a wide range of advanced techniques found in state-of-the-art chess engines.
 
 This project serves not only as a capable Xiangqi AI but also as an excellent educational resource, demonstrating the complete journey of building a chess AI from basic algorithms to sophisticated optimizations.
 
 ### 简体中文
 
-**MiniXiangqi (迷你象棋)** 是一个从零开始、逐步构建的现代化中国象棋引擎。项目最初旨在学习和实践 NegaMax 搜索算法，随着研究的深入，我们不断融入多种现代象棋引擎的核心技术，使其具备了完善的对弈能力与精准的评估体系。
+**Xiangqi (迷你象棋)** 是一个从零开始、逐步构建的现代化中国象棋引擎。项目最初旨在学习和实践 NegaMax 搜索算法，随着研究的深入，我们不断融入多种现代象棋引擎的核心技术，使其具备了完善的对弈能力与精准的评估体系。
 
 该项目不仅是一个功能强大的象棋 AI，也是一个绝佳的学习资源，清晰地展示了棋类 AI 从基础算法到高级优化的完整实现过程。
 
