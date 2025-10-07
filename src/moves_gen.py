@@ -6,7 +6,7 @@
 
 from typing import List, Optional
 
-from src.board import BoardState, Board, Move, get_player, is_valid_pos
+from src.board import BoardState, Board, Move, get_player, is_valid_pos, piece_to_zobrist_idx
 from src.constants import *
 
 
@@ -26,9 +26,6 @@ def generate_moves(board: Board) -> List[Move]:
     legal_moves = []
     for move in pseudo_legal_moves:
         captured_piece = board.make_move(move)
-
-        if move == ((8, 4), (8, 3)):
-            pass
 
         # 切换到对手视角来检查攻击
         board.player *= -1
@@ -234,27 +231,34 @@ def get_pawn_moves(board_state: BoardState, r: int, c: int) -> List[Move]:
     return moves
 
 
-def order_moves(board_state: BoardState, moves: List[Move], best_move_from_tt: Optional[Move] = None) -> List[Move]:
+def order_moves(board_state: BoardState, moves: List[Move], best_move_from_tt: Optional[Move], history_table: List[List[int]]) -> List[Move]:
     '''
     对着法列表进行排序，以优化Alpha-Beta剪枝效率。
+    排序优先级: 置换表最佳走法 > 吃子走法(MVV-LVA) > 历史启发 > 普通走法
     '''
     move_scores = {}
-    CAPTURE_BONUS = 10000
+    CAPTURE_BONUS = 1000000  # 确保吃子走法优先于历史启发
 
     for move in moves:
         score = 0
         from_r, from_c = move[0]
         to_r, to_c = move[1]
 
+        moving_piece = board_state[from_r][from_c]
+        captured_piece = board_state[to_r][to_c]
+
         if move == best_move_from_tt:
-            score = 100000
+            score = 10 * CAPTURE_BONUS # 最高优先级
+        elif captured_piece != EMPTY:
+            # MVV-LVA (Most Valuable Victim - Least Valuable Attacker)
+            victim_value = abs(PIECE_VALUES.get(captured_piece, 0))
+            attacker_value = abs(PIECE_VALUES.get(moving_piece, 0))
+            score = CAPTURE_BONUS + victim_value - attacker_value
         else:
-            captured_piece = board_state[to_r][to_c]
-            if captured_piece != EMPTY:
-                moving_piece = board_state[from_r][from_c]
-                victim_value = abs(PIECE_VALUES.get(captured_piece, 0))
-                attacker_value = abs(PIECE_VALUES.get(moving_piece, 0))
-                score = CAPTURE_BONUS + victim_value - attacker_value
+            # 历史启发分数
+            piece_idx = piece_to_zobrist_idx(moving_piece)
+            to_sq_idx = to_r * 9 + to_c
+            score = history_table[piece_idx][to_sq_idx]
 
         move_scores[move] = score
 
@@ -273,7 +277,13 @@ def generate_capture_moves(board: Board) -> List[Move]:
         for move in piece_moves:
             to_r, to_c = move[1]
             if board_state[to_r][to_c] != EMPTY:
-                capture_moves.append(move)
+                # 确保是合法的吃子
+                captured_piece = board.make_move(move)
+                board.player *= -1
+                if not board.is_check():
+                    capture_moves.append(move)
+                board.player *= -1
+                board.unmake_move(move, captured_piece)
 
     return capture_moves
 

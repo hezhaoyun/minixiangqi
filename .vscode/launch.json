@@ -5,6 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "moves_gen",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.moves_gen"
+        },
+        {
             "name": "evaluate",
             "type": "debugpy",
             "request": "launch",

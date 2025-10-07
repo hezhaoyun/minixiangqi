@@ -6,7 +6,7 @@ import json
 import random
 from typing import Dict, Optional, Tuple
 
-from src.board import Board, Move
+from src.board import Board, Move, piece_to_zobrist_idx
 from src.evaluate import evaluate
 from src.moves_gen import generate_moves, generate_capture_moves, order_moves
 from src.constants import *
@@ -30,7 +30,13 @@ class Engine:
         self.time_limit = 0
         self.opening_book = None
         self.book_random = random.Random()
+        # 历史启发二维数组 [piece_idx][to_square_idx]
+        self.history_table = [[0] * 90 for _ in range(14)]
         self._load_opening_book()
+
+    def _clear_history_table(self):
+        '''清空历史表'''
+        self.history_table = [[0] * 90 for _ in range(14)]
 
     def _load_opening_book(self):
         '''加载开局库文件.'''
@@ -83,7 +89,8 @@ class Engine:
         alpha = max(alpha, stand_pat_score)
 
         capture_moves = generate_capture_moves(board)
-        ordered_moves = order_moves(board.board, capture_moves, None)
+        # 保持接口一致性, 传入历史表
+        ordered_moves = order_moves(board.board, capture_moves, None, self.history_table)
 
         for move in ordered_moves:
             captured_piece = board.make_move(move)
@@ -138,7 +145,7 @@ class Engine:
         best_move_from_tt = tt_entry.get('best_move') if tt_entry else None
 
         moves = generate_moves(board)
-        ordered_moves = order_moves(board.board, moves, best_move_from_tt)
+        ordered_moves = order_moves(board.board, moves, best_move_from_tt, self.history_table)
 
         if not ordered_moves:
             return -math.inf, None
@@ -161,6 +168,13 @@ class Engine:
             alpha = max(alpha, best_value)
 
             if alpha >= beta:
+                # Beta 剪枝: 这个走法太好了, 对手不会允许它发生
+                # 更新历史启发分数
+                if captured_piece == EMPTY: # 只对非吃子走法进行历史启发
+                    moving_piece = board.board[move[0][0]][move[0][1]]
+                    piece_idx = piece_to_zobrist_idx(moving_piece)
+                    to_sq_idx = move[1][0] * 9 + move[1][1]
+                    self.history_table[piece_idx][to_sq_idx] += depth * depth
                 break
 
         if best_value == -math.inf:
@@ -194,6 +208,7 @@ class Engine:
 
         board_copy = board.copy()
         self.tt.clear()
+        self._clear_history_table()
         best_move = None
         final_score = -math.inf
 
@@ -217,6 +232,7 @@ class Engine:
 
         board_copy = board.copy()
         self.tt.clear()
+        self._clear_history_table()
         self.start_time = time.time()
         self.time_limit = time_limit_seconds
         self.nodes_searched = 0
