@@ -189,8 +189,8 @@ def main():
                             pygame.display.flip()
 
                             # Engine's turn
-                            _, engine_move = engine.search_by_time(board, 3.0)
-                            # _, engine_move = engine.search_by_depth(board, 4)
+                            # _, engine_move = engine.search_by_time(board, 3.0)
+                            _, engine_move = engine.search_by_depth(board, 10)
                             if engine_move:
                                 from_r, from_c = engine_move[0]
                                 to_r, to_c = engine_move[1]

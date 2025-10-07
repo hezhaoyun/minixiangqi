@@ -123,8 +123,21 @@ class Engine:
             return self._quiescence_search(bb, alpha, beta), None
 
         # --- Null Move Pruning ---
-        R = 3  # Depth reduction factor
-        if allow_null and depth >= 3 and not moves.is_check(bb, bb.player_to_move):
+        R = 2  # Depth reduction factor, reduced from 3 to 2
+
+        # Endgame check for NMP: disable if few major pieces are left
+        major_pieces_count = 0
+        player_idx = bb.get_player_bb_idx(bb.player_to_move)
+        if player_idx == 0: # Red
+            major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[R_ROOK]]).count('1')
+            major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[R_HORSE]]).count('1')
+            major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[R_CANNON]]).count('1')
+        else: # Black
+            major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[B_ROOK]]).count('1')
+            major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[B_HORSE]]).count('1')
+            major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[B_CANNON]]).count('1')
+
+        if allow_null and depth >= 3 and not moves.is_check(bb, bb.player_to_move) and major_pieces_count > 1:
             # Make a null move
             bb.player_to_move *= -1
             bb.hash_key ^= zobrist_player
@@ -236,6 +249,9 @@ class Engine:
         self.tt.clear()
         self._clear_history_table()
         score, move = -math.inf, None
+        last_good_move = None
         for i in range(1, depth + 1):
             score, move = self._negamax(board_copy, i, -math.inf, math.inf, allow_null=True)
-        return score, move
+            if move is not None:
+                last_good_move = move
+        return score, last_good_move
