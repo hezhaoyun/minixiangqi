@@ -8,7 +8,7 @@ from typing import List, Tuple
 
 from src.bitboard import Bitboard, PIECE_TO_BB_INDEX, BB_INDEX_TO_PIECE
 from src.constants import *
-# from src.moves_gen_bitboard import generate_moves_for_piece # 循环导入，暂时注释
+from src.moves_gen_bitboard import get_rook_moves_bb, get_cannon_moves_bb, HORSE_ATTACKS, HORSE_LEGS, SQUARE_MASKS
 
 # --- Midgame Piece-Square Tables (PST_MG) ---
 # fmt: off
@@ -82,40 +82,99 @@ DYNAMIC_BONUS = {'ATTACK_PER_MISSING_DEFENDER': 15,}
 def popcount(bb: int) -> int:
     return bin(bb).count('1')
 
+def calculate_mobility_score(bb: Bitboard) -> int:
+    mobility_score = 0
+    occupied = bb.occupied_bitboard
+
+    for player in [PLAYER_R, PLAYER_B]:
+        player_idx = 0 if player == PLAYER_R else 1
+        own_pieces_bb = bb.color_bitboards[player_idx]
+        
+        # Rook mobility
+        rook_piece = R_ROOK if player == PLAYER_R else B_ROOK
+        rooks_bb = bb.piece_bitboards[PIECE_TO_BB_INDEX[rook_piece]]
+        temp_rooks = rooks_bb
+        while temp_rooks:
+            sq = (temp_rooks & -temp_rooks).bit_length() - 1
+            moves_bb = get_rook_moves_bb(sq, occupied) & ~own_pieces_bb
+            mobility_score += popcount(moves_bb) * MOBILITY_BONUS[R_ROOK] * player
+            temp_rooks &= temp_rooks - 1
+
+        # Horse mobility
+        horse_piece = R_HORSE if player == PLAYER_R else B_HORSE
+        horses_bb = bb.piece_bitboards[PIECE_TO_BB_INDEX[horse_piece]]
+        temp_horses = horses_bb
+        while temp_horses:
+            sq = (temp_horses & -temp_horses).bit_length() - 1
+            potential_moves = HORSE_ATTACKS[sq] & ~own_pieces_bb
+            temp_moves = potential_moves
+            while temp_moves:
+                to_sq = (temp_moves & -temp_moves).bit_length() - 1
+                leg_sq = HORSE_LEGS[sq][to_sq]
+                if not (occupied & SQUARE_MASKS[leg_sq]):
+                    mobility_score += MOBILITY_BONUS[R_HORSE] * player
+                temp_moves &= temp_moves - 1
+            temp_horses &= temp_horses - 1
+
+        # Cannon mobility
+        cannon_piece = R_CANNON if player == PLAYER_R else B_CANNON
+        cannons_bb = bb.piece_bitboards[PIECE_TO_BB_INDEX[cannon_piece]]
+        temp_cannons = cannons_bb
+        while temp_cannons:
+            sq = (temp_cannons & -temp_cannons).bit_length() - 1
+            moves_bb = get_cannon_moves_bb(sq, occupied) & ~own_pieces_bb
+            mobility_score += popcount(moves_bb) * MOBILITY_BONUS[R_CANNON] * player
+            temp_cannons &= temp_cannons - 1
+            
+    return mobility_score
+
 def evaluate(bb: Bitboard) -> int:
-    score = 0
+    material_score = 0
+    pst_score = 0
+
+    # 1. Calculate material score efficiently using popcount
+    for piece_type, value in PIECE_VALUES.items():
+        count = popcount(bb.piece_bitboards[PIECE_TO_BB_INDEX[piece_type]])
+        material_score += count * value
+
+    # 2. Determine game phase for tapered evaluation
     current_phase_material = 0
     major_pieces = {R_ROOK, R_HORSE, R_CANNON, R_GUARD, R_BISHOP}
     for piece_type in major_pieces:
-        current_phase_material += popcount(bb.piece_bitboards[PIECE_TO_BB_INDEX[piece_type]]) * PIECE_VALUES[piece_type]
-        current_phase_material += popcount(bb.piece_bitboards[PIECE_TO_BB_INDEX[-piece_type]]) * PIECE_VALUES[piece_type]
+        # Consider both sides for phase calculation
+        current_phase_material += popcount(bb.piece_bitboards[PIECE_TO_BB_INDEX[piece_type]]) * abs(PIECE_VALUES[piece_type])
+        current_phase_material += popcount(bb.piece_bitboards[PIECE_TO_BB_INDEX[-piece_type]]) * abs(PIECE_VALUES[piece_type])
     phase_weight = min(1.0, current_phase_material / OPENING_PHASE_MATERIAL)
 
+    # 3. Calculate PST score
     for piece_bb_idx, piece_bb in enumerate(bb.piece_bitboards):
         temp_bb = piece_bb
         piece_type = BB_INDEX_TO_PIECE[piece_bb_idx]
-        player = PLAYER_R if piece_type > 0 else PLAYER_B
+        player = Bitboard.get_player(piece_type)
         
         while temp_bb:
             sq = (temp_bb & -temp_bb).bit_length() - 1
             r, c = sq // 9, sq % 9
             
-            score += PIECE_VALUES[piece_type]
+            # Always lookup from Red's perspective
+            pst_r, pst_c = (9 - r, 8 - c) if player == PLAYER_R else (r, c)
+            
+            mg_pst = PST_MG[piece_type][pst_r][pst_c]
+            eg_pst = PST_EG[piece_type][pst_r][pst_c]
+            
+            pst = mg_pst * phase_weight + eg_pst * (1 - phase_weight)
             
             if player == PLAYER_R:
-                mg_pst = PST_MG[piece_type][9 - r][8 - c]
-                eg_pst = PST_EG[piece_type][9 - r][8 - c]
-                score += mg_pst * phase_weight + eg_pst * (1 - phase_weight)
+                pst_score += pst
             else:
-                mg_pst = PST_MG[piece_type][r][c]
-                eg_pst = PST_EG[piece_type][r][c]
-                score -= mg_pst * phase_weight + eg_pst * (1 - phase_weight)
-
-            # Mobility score can be added here if moves_gen_bitboard is accessible
+                pst_score -= pst
 
             temp_bb &= temp_bb - 1
 
-    # Pattern and dynamic scores can be added here by adapting the logic to bitboards
-    # This is left as a future exercise to keep this step focused.
-
-    return int(score)
+    # --- Final Score ---
+    mobility_score = calculate_mobility_score(bb)
+    # The score is from Red's perspective. We adjust it for the current player.
+    final_score = material_score + pst_score + mobility_score
+    
+    # Return score from the perspective of the current player to move
+    return int(final_score * bb.player_to_move)

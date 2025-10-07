@@ -7,7 +7,7 @@ import random
 from typing import Dict, Optional, Tuple
 
 # --- New Bitboard Imports ---
-from src.bitboard import Bitboard, piece_to_zobrist_idx, PIECE_TO_BB_INDEX
+from src.bitboard import Bitboard, PIECE_TO_BB_INDEX
 from src.evaluate import evaluate
 import src.moves_gen_bitboard as bb_moves
 
@@ -65,18 +65,6 @@ class Engine:
             if self.time_limit > 0 and time.time() - self.start_time >= self.time_limit:
                 raise StopSearchException()
 
-    def _is_king_in_check(self, bb: Bitboard, player: int) -> bool:
-        """
-        检查指定玩家(player)的王是否被将军
-        """
-        player_king = R_KING if player == PLAYER_R else B_KING
-        king_sq_bb = bb.piece_bitboards[PIECE_TO_BB_INDEX[player_king]]
-        if not king_sq_bb:
-            return True  # 王不存在，视为被将
-
-        king_sq = (king_sq_bb & -king_sq_bb).bit_length() - 1
-        return bb_moves.is_square_attacked_by(bb, king_sq, -player)
-
     def _negamax(self, bb: Bitboard, depth: int, alpha: float, beta: float) -> Tuple[float, Optional[Move]]:
         self.nodes_searched += 1
         self._check_time()
@@ -101,46 +89,44 @@ class Engine:
 
         best_value, best_move = -math.inf, None
 
-        # Generate pseudo-legal moves
-        pseudo_moves = bb_moves.generate_all_moves(bb, bb.player_to_move)
+        def sq_to_coord(sq: int) -> tuple[int, int]:
+            return sq // 9, sq % 9
+
+        # Generate legal moves
+        legal_moves = bb_moves.generate_moves(bb)
 
         # TODO: Implement move ordering with history heuristic for bitboard moves
 
-        move_found = False
-        for move in pseudo_moves:
-            from_sq, to_sq = move[0][0] * 9 + move[0][1], move[1][0] * 9 + move[1][1]
+        if not legal_moves:
+            if bb_moves.is_check(bb, bb.player_to_move):
+                return -MATE_VALUE, None  # Checkmate
+            return DRAW_VALUE, None  # Stalemate
 
+        for from_sq, to_sq in legal_moves:
             captured_piece = bb.move_piece(from_sq, to_sq)
 
-            # Check for legality (king not in check after move)
-            if not self._is_king_in_check(bb, -bb.player_to_move):  # Check from opponent's perspective
-                move_found = True
-                if bb.history.count(bb.hash_key) > 1:
-                    current_score = 0
-                else:
-                    child_value, _ = self._negamax(bb, depth - 1, -beta, -alpha)
-                    current_score = -child_value
+            if bb.history.count(bb.hash_key) > 1:
+                current_score = 0
+            else:
+                child_value, _ = self._negamax(bb, depth - 1, -beta, -alpha)
+                current_score = -child_value
 
-                if current_score > best_value:
-                    best_value = current_score
-                    best_move = move
-
-                alpha = max(alpha, best_value)
+            if current_score > best_value:
+                best_value = current_score
+                best_move = (sq_to_coord(from_sq), sq_to_coord(to_sq))
 
             bb.unmove_piece(from_sq, to_sq, captured_piece)
 
+            alpha = max(alpha, best_value)
+
             if alpha >= beta:
                 if captured_piece == EMPTY:
+                    # After unmove, the piece is back at from_sq
                     moving_piece = bb.get_piece_on_square(from_sq)
-                    piece_idx = piece_to_zobrist_idx(moving_piece)
-                    self.history_table[piece_idx][to_sq] += depth * depth
+                    if moving_piece != EMPTY:
+                        piece_idx = Bitboard.piece_to_zobrist_idx(moving_piece)
+                        self.history_table[piece_idx][to_sq] += depth * depth
                 break
-
-        if not move_found:
-            # No legal moves, check for checkmate or stalemate
-            if self._is_king_in_check(bb, bb.player_to_move):
-                return -MATE_VALUE, None  # Checkmate
-            return DRAW_VALUE, None  # Stalemate
 
         flag = TT_EXACT
         if best_value <= original_alpha:

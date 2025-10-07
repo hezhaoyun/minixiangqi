@@ -5,7 +5,7 @@
 """
 
 from typing import List
-from src.bitboard import Bitboard, get_player, SQUARE_MASKS, PIECE_TO_BB_INDEX, BB_INDEX_TO_PIECE
+from src.bitboard import Bitboard, SQUARE_MASKS, PIECE_TO_BB_INDEX, BB_INDEX_TO_PIECE
 from src.constants import *
 
 Move = tuple[tuple[int, int], tuple[int, int]]
@@ -87,62 +87,47 @@ _precompute_king_guard_attacks()
 _precompute_bishop_horse_attacks()
 _precompute_pawn_attacks()
 
-def get_rook_moves_bb(sq: int, occupied: int) -> int:
+def _get_slider_moves_in_direction(sq: int, occupied: int, is_cannon: bool, direction: tuple[int, int]) -> int:
     r, c = sq // 9, sq % 9
+    dr, dc = direction
     attacks = 0
-    for nc in range(c + 1, 9): 
-        s = _sq(r, nc); attacks |= SQUARE_MASKS[s]
-        if occupied & SQUARE_MASKS[s]: break
-    for nc in range(c - 1, -1, -1):
-        s = _sq(r, nc); attacks |= SQUARE_MASKS[s]
-        if occupied & SQUARE_MASKS[s]: break
-    for nr in range(r + 1, 10):
-        s = _sq(nr, c); attacks |= SQUARE_MASKS[s]
-        if occupied & SQUARE_MASKS[s]: break
-    for nr in range(r - 1, -1, -1):
-        s = _sq(nr, c); attacks |= SQUARE_MASKS[s]
-        if occupied & SQUARE_MASKS[s]: break
+    screen = False
+    
+    nr, nc = r + dr, c + dc
+    while _is_valid(nr, nc):
+        s = _sq(nr, nc)
+        is_occupied = occupied & SQUARE_MASKS[s]
+        
+        if not is_cannon: # Rook logic
+            attacks |= SQUARE_MASKS[s]
+            if is_occupied:
+                break
+        else: # Cannon logic
+            if not screen:
+                if not is_occupied:
+                    attacks |= SQUARE_MASKS[s]
+                else:
+                    screen = True
+            else:
+                if is_occupied:
+                    attacks |= SQUARE_MASKS[s]
+                    break
+        
+        nr += dr
+        nc += dc
+        
+    return attacks
+
+def get_rook_moves_bb(sq: int, occupied: int) -> int:
+    attacks = 0
+    for direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+        attacks |= _get_slider_moves_in_direction(sq, occupied, False, direction)
     return attacks
 
 def get_cannon_moves_bb(sq: int, occupied: int) -> int:
-    r, c = sq // 9, sq % 9
     attacks = 0
-    screen = False
-    for nc in range(c + 1, 9):
-        s = _sq(r, nc)
-        if not screen:
-            if not (occupied & SQUARE_MASKS[s]): attacks |= SQUARE_MASKS[s]
-            else: screen = True
-        else:
-            if occupied & SQUARE_MASKS[s]:
-                attacks |= SQUARE_MASKS[s]; break
-    screen = False
-    for nc in range(c - 1, -1, -1):
-        s = _sq(r, nc)
-        if not screen:
-            if not (occupied & SQUARE_MASKS[s]): attacks |= SQUARE_MASKS[s]
-            else: screen = True
-        else:
-            if occupied & SQUARE_MASKS[s]:
-                attacks |= SQUARE_MASKS[s]; break
-    screen = False
-    for nr in range(r + 1, 10):
-        s = _sq(nr, c)
-        if not screen:
-            if not (occupied & SQUARE_MASKS[s]): attacks |= SQUARE_MASKS[s]
-            else: screen = True
-        else:
-            if occupied & SQUARE_MASKS[s]:
-                attacks |= SQUARE_MASKS[s]; break
-    screen = False
-    for nr in range(r - 1, -1, -1):
-        s = _sq(nr, c)
-        if not screen:
-            if not (occupied & SQUARE_MASKS[s]): attacks |= SQUARE_MASKS[s]
-            else: screen = True
-        else:
-            if occupied & SQUARE_MASKS[s]:
-                attacks |= SQUARE_MASKS[s]; break
+    for direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+        attacks |= _get_slider_moves_in_direction(sq, occupied, True, direction)
     return attacks
 
 def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
@@ -153,7 +138,7 @@ def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
 
     for piece_bb_idx in range(14):
         piece_type = BB_INDEX_TO_PIECE[piece_bb_idx]
-        if get_player(piece_type) != player: continue
+        if Bitboard.get_player(piece_type) != player: continue
 
         piece_bb = bb.piece_bitboards[piece_bb_idx]
         temp_piece_bb = piece_bb
@@ -165,16 +150,9 @@ def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
                 moves_bb = KING_ATTACKS[from_sq]
             elif piece_type in (R_GUARD, B_GUARD):
                 moves_bb = GUARD_ATTACKS[from_sq]
-            elif piece_type == R_BISHOP:
-                potential_moves = BISHOP_ATTACKS[from_sq] & BLACK_SIDE_MASK
-                temp_moves = potential_moves
-                while temp_moves:
-                    to_sq = (temp_moves & -temp_moves).bit_length() - 1
-                    leg_sq = BISHOP_LEGS[from_sq][to_sq]
-                    if not (occupied & SQUARE_MASKS[leg_sq]): moves_bb |= SQUARE_MASKS[to_sq]
-                    temp_moves &= temp_moves - 1
-            elif piece_type == B_BISHOP:
-                potential_moves = BISHOP_ATTACKS[from_sq] & RED_SIDE_MASK
+            elif piece_type in (R_BISHOP, B_BISHOP):
+                side_mask = BLACK_SIDE_MASK if piece_type == R_BISHOP else RED_SIDE_MASK
+                potential_moves = BISHOP_ATTACKS[from_sq] & side_mask
                 temp_moves = potential_moves
                 while temp_moves:
                     to_sq = (temp_moves & -temp_moves).bit_length() - 1
@@ -200,14 +178,12 @@ def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
             temp_valid_moves = valid_moves_bb
             while temp_valid_moves:
                 to_sq = (temp_valid_moves & -temp_valid_moves).bit_length() - 1
-                moves.append(((_sq_to_coord(from_sq)), (_sq_to_coord(to_sq))))
+                moves.append((from_sq, to_sq))
                 temp_valid_moves &= temp_valid_moves - 1
 
             temp_piece_bb &= temp_piece_bb - 1
     return moves
 
-def _sq_to_coord(sq: int) -> tuple[int, int]:
-    return sq // 9, sq % 9
 
 def is_square_attacked_by(bb: Bitboard, sq: int, attacker_player: int) -> bool:
     occupied = bb.occupied_bitboard
@@ -263,19 +239,18 @@ def generate_moves(bb: Bitboard) -> List[Move]:
     """
     Generates all legal moves for the current player.
     """
+    def sq_to_coord(sq: int) -> tuple[int, int]:
+        return sq // 9, sq % 9
+
     legal_moves = []
     player = bb.player_to_move
     
     pseudo_legal_moves = generate_all_moves(bb, player)
 
-    for move in pseudo_legal_moves:
-        from_r, from_c = move[0]
-        to_r, to_c = move[1]
-        from_sq, to_sq = from_r * 9 + from_c, to_r * 9 + to_c
-        
+    for from_sq, to_sq in pseudo_legal_moves:
         captured = bb.move_piece(from_sq, to_sq)
         if not is_check(bb, player):
-            legal_moves.append(move)
+            legal_moves.append((sq_to_coord(from_sq), sq_to_coord(to_sq)))
         bb.unmove_piece(from_sq, to_sq, captured)
         
     return legal_moves

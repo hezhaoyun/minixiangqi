@@ -87,18 +87,15 @@ def draw_last_move():
 
 def is_game_over(board):
     """
-    Check if the game is over.
+    Check if the game is over. Returns the result message if so, otherwise None.
     """
     moves = generate_moves(board)
     if len(moves) == 0:
         if is_check(board, board.player_to_move):
-            if board.player_to_move == PLAYER_B:
-                return 'checkmate', '红方胜'
-            else:
-                return 'checkmate', '黑方胜'
+            return '红方胜' if board.player_to_move == PLAYER_B else '黑方胜'
         else:
-            return 'stalemate', '和棋'
-    return 'in_progress', ''
+            return '和棋'
+    return None
 
 def main():
     global selected_piece_pos, board, last_move, move_history, game_over, game_result_message
@@ -165,10 +162,10 @@ def main():
                         pygame.display.flip()
 
                         # 检查游戏是否结束
-                        status, message = is_game_over(board)
-                        if status != 'in_progress':
+                        result_message = is_game_over(board)
+                        if result_message:
                             game_over = True
-                            game_result_message = message
+                            game_result_message = result_message
                         else:
                             pygame.time.wait(300)  # show player's move
 
@@ -193,10 +190,10 @@ def main():
                                 last_move = engine_move
 
                                 # 检查游戏是否结束
-                                status, message = is_game_over(board)
-                                if status != 'in_progress':
+                                result_message = is_game_over(board)
+                                if result_message:
                                     game_over = True
-                                    game_result_message = message
+                                    game_result_message = result_message
                     else:
                         selected_piece_pos = None
                 else:

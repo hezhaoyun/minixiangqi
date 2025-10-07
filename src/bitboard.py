@@ -25,13 +25,13 @@ PIECE_TO_BB_INDEX = {
 }
 BB_INDEX_TO_PIECE = {v: k for k, v in PIECE_TO_BB_INDEX.items()}
 
-def piece_to_zobrist_idx(piece: int) -> int:
-    if piece < 0: return abs(piece) - 1
-    elif piece > 0: return piece + 6
-    return -1
+    @staticmethod
+    def piece_to_zobrist_idx(piece: int) -> int:
+        if piece < 0: return abs(piece) - 1
+        elif piece > 0: return piece + 6
+        return -1
 
-def get_player(piece: int) -> int:
-    return PLAYER_R if piece > 0 else PLAYER_B
+    @staticmethod
 
 class Bitboard:
     def __init__(self, fen: Optional[str] = None):
@@ -83,12 +83,12 @@ class Bitboard:
 
     def _set_piece(self, piece_type: int, sq: int):
         mask = SQUARE_MASKS[sq]
-        player = get_player(piece_type)
+        player = Bitboard.get_player(piece_type)
         r, c = sq // 9, sq % 9
         
         self.piece_bitboards[PIECE_TO_BB_INDEX[piece_type]] |= mask
         self.color_bitboards[self.get_player_bb_idx(player)] |= mask
-        self.hash_key ^= zobrist_keys[piece_to_zobrist_idx(piece_type)][r][c]
+        self.hash_key ^= zobrist_keys[Bitboard.piece_to_zobrist_idx(piece_type)][r][c]
 
     def move_piece(self, from_sq: int, to_sq: int) -> int:
         moving_piece = self.get_piece_on_square(from_sq)
@@ -102,7 +102,7 @@ class Bitboard:
         r_to, c_to = to_sq // 9, to_sq % 9
 
         # 1. Update hash for moving piece
-        moving_z_idx = piece_to_zobrist_idx(moving_piece)
+        moving_z_idx = Bitboard.piece_to_zobrist_idx(moving_piece)
         self.hash_key ^= zobrist_keys[moving_z_idx][r_from][c_from]
         self.hash_key ^= zobrist_keys[moving_z_idx][r_to][c_to]
 
@@ -113,11 +113,11 @@ class Bitboard:
 
         # 3. Handle capture
         if captured_piece != EMPTY:
-            captured_z_idx = piece_to_zobrist_idx(captured_piece)
+            captured_z_idx = Bitboard.piece_to_zobrist_idx(captured_piece)
             self.hash_key ^= zobrist_keys[captured_z_idx][r_to][c_to]
             capture_mask = CLEAR_MASKS[to_sq]
             self.piece_bitboards[PIECE_TO_BB_INDEX[captured_piece]] &= capture_mask
-            self.color_bitboards[self.get_player_bb_idx(get_player(captured_piece))] &= capture_mask
+            self.color_bitboards[self.get_player_bb_idx(Bitboard.get_player(captured_piece))] &= capture_mask
 
         # 4. Update player and hash
         self.player_to_move *= -1
@@ -131,7 +131,6 @@ class Bitboard:
         moving_piece = self.get_piece_on_square(to_sq) # Piece is at its new location
         r_from, c_from = from_sq // 9, from_sq % 9
         r_to, c_to = to_sq // 9, to_sq % 9
-        r_to, c_to = to_sq // 9, to_sq % 9
 
         # 1. Update player and hash
         self.player_to_move *= -1
@@ -143,7 +142,7 @@ class Bitboard:
         self.color_bitboards[self.get_player_bb_idx(self.player_to_move)] ^= move_mask
 
         # 3. Revert moving piece hash
-        moving_z_idx = piece_to_zobrist_idx(moving_piece)
+        moving_z_idx = Bitboard.piece_to_zobrist_idx(moving_piece)
         self.hash_key ^= zobrist_keys[moving_z_idx][r_from][c_from]
         self.hash_key ^= zobrist_keys[moving_z_idx][r_to][c_to]
 
@@ -151,14 +150,21 @@ class Bitboard:
         if captured_piece != EMPTY:
             capture_mask = SQUARE_MASKS[to_sq]
             self.piece_bitboards[PIECE_TO_BB_INDEX[captured_piece]] |= capture_mask
-            self.color_bitboards[self.get_player_bb_idx(get_player(captured_piece))] |= capture_mask
-            captured_z_idx = piece_to_zobrist_idx(captured_piece)
+            self.color_bitboards[self.get_player_bb_idx(Bitboard.get_player(captured_piece))] |= capture_mask
+            captured_z_idx = Bitboard.piece_to_zobrist_idx(captured_piece)
             self.hash_key ^= zobrist_keys[captured_z_idx][r_to][c_to]
 
     def get_piece_on_square(self, sq: int) -> int:
         mask = SQUARE_MASKS[sq]
-        for i in range(14):
-            if self.piece_bitboards[i] & mask: return BB_INDEX_TO_PIECE[i]
+        
+        # Determine player first for faster lookup
+        is_red = self.color_bitboards[0] & mask
+        player_bb_indices = range(7) if is_red else range(7, 14)
+
+        for i in player_bb_indices:
+            if self.piece_bitboards[i] & mask:
+                return BB_INDEX_TO_PIECE[i]
+        
         return EMPTY
 
     @property
