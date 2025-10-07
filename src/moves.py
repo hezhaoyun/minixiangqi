@@ -11,37 +11,42 @@ from src.constants import *
 Move = tuple[tuple[int, int], tuple[int, int]]
 
 # --- Masks ---
-RED_SIDE_MASK = 0x1FFFFFFFFFFFF  # Bits 0-44 (Black's side for Red to cross)
-BLACK_SIDE_MASK = 0x3FFFFFFFFFFFFFFFFFFFFF000000000000 # Bits 45-89
+RED_SIDE_MASK = 0x1FFFFFFFFFFF  # Bits 0-44 (Black's side for Red to cross)
+BLACK_SIDE_MASK = 0x3FFFFFFFFFFE00000000000  # Bits 45-89
 
 # --- Pre-calculated Attack Tables ---
 KING_ATTACKS = [0] * 90
 GUARD_ATTACKS = [0] * 90
 BISHOP_ATTACKS = [0] * 90
-BISHOP_LEGS = {} # from_sq -> to_sq -> leg_sq
+BISHOP_LEGS = {}  # from_sq -> to_sq -> leg_sq
 HORSE_ATTACKS = [0] * 90
-HORSE_LEGS = {} # from_sq -> to_sq -> leg_sq
+HORSE_LEGS = {}  # from_sq -> to_sq -> leg_sq
 PAWN_ATTACKS = [[0] * 90, [0] * 90]
 
 # --- Helper functions for pre-computation ---
 
+
 def _sq(r, c): return r * 9 + c
 def _is_valid(r, c): return 0 <= r < 10 and 0 <= c < 9
+
 
 def _precompute_king_guard_attacks():
     for r in range(10):
         for c in range(9):
             sq = _sq(r, c)
             # King
-            for dr, dc in [(0,1), (0,-1), (1,0), (-1,0)]:
+            for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
                 nr, nc = r + dr, c + dc
-                if not (3 <= nc <= 5 and (0 <= nr <= 2 or 7 <= nr <= 9)): continue
+                if not (3 <= nc <= 5 and (0 <= nr <= 2 or 7 <= nr <= 9)):
+                    continue
                 KING_ATTACKS[sq] |= SQUARE_MASKS[_sq(nr, nc)]
             # Guard
-            for dr, dc in [(1,1), (1,-1), (-1,1), (-1,-1)]:
+            for dr, dc in [(1, 1), (1, -1), (-1, 1), (-1, -1)]:
                 nr, nc = r + dr, c + dc
-                if not (3 <= nc <= 5 and (0 <= nr <= 2 or 7 <= nr <= 9)): continue
+                if not (3 <= nc <= 5 and (0 <= nr <= 2 or 7 <= nr <= 9)):
+                    continue
                 GUARD_ATTACKS[sq] |= SQUARE_MASKS[_sq(nr, nc)]
+
 
 def _precompute_bishop_horse_attacks():
     for r in range(10):
@@ -50,59 +55,72 @@ def _precompute_bishop_horse_attacks():
             BISHOP_LEGS[from_sq] = {}
             HORSE_LEGS[from_sq] = {}
             # Bishop
-            for dr, dc in [(2,2), (2,-2), (-2,2), (-2,-2)]:
+            for dr, dc in [(2, 2), (2, -2), (-2, 2), (-2, -2)]:
                 nr, nc = r + dr, c + dc
-                if not _is_valid(nr, nc): continue
+                if not _is_valid(nr, nc):
+                    continue
                 to_sq = _sq(nr, nc)
                 BISHOP_ATTACKS[from_sq] |= SQUARE_MASKS[to_sq]
                 leg_r, leg_c = r + dr // 2, c + dc // 2
                 BISHOP_LEGS[from_sq][to_sq] = _sq(leg_r, leg_c)
             # Horse
-            for dr, dc in [(2,1), (2,-1), (-2,1), (-2,-1), (1,2), (1,-2), (-1,2), (-1,-2)]:
+            for dr, dc in [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2)]:
                 nr, nc = r + dr, c + dc
-                if not _is_valid(nr, nc): continue
+                if not _is_valid(nr, nc):
+                    continue
                 to_sq = _sq(nr, nc)
                 HORSE_ATTACKS[from_sq] |= SQUARE_MASKS[to_sq]
                 leg_r, leg_c = r, c
-                if abs(dr) == 2: leg_r += dr // 2
-                else: leg_c += dc // 2
+                if abs(dr) == 2:
+                    leg_r += dr // 2
+                else:
+                    leg_c += dc // 2
                 HORSE_LEGS[from_sq][to_sq] = _sq(leg_r, leg_c)
+
 
 def _precompute_pawn_attacks():
     for r in range(10):
         for c in range(9):
             sq = _sq(r, c)
             # Red Pawns (player_idx 0)
-            if _is_valid(r - 1, c): PAWN_ATTACKS[0][sq] |= SQUARE_MASKS[_sq(r - 1, c)]
+            if _is_valid(r - 1, c):
+                PAWN_ATTACKS[0][sq] |= SQUARE_MASKS[_sq(r - 1, c)]
             if r < 5:
-                if _is_valid(r, c - 1): PAWN_ATTACKS[0][sq] |= SQUARE_MASKS[_sq(r, c - 1)]
-                if _is_valid(r, c + 1): PAWN_ATTACKS[0][sq] |= SQUARE_MASKS[_sq(r, c + 1)]
+                if _is_valid(r, c - 1):
+                    PAWN_ATTACKS[0][sq] |= SQUARE_MASKS[_sq(r, c - 1)]
+                if _is_valid(r, c + 1):
+                    PAWN_ATTACKS[0][sq] |= SQUARE_MASKS[_sq(r, c + 1)]
             # Black Pawns (player_idx 1)
-            if _is_valid(r + 1, c): PAWN_ATTACKS[1][sq] |= SQUARE_MASKS[_sq(r + 1, c)]
+            if _is_valid(r + 1, c):
+                PAWN_ATTACKS[1][sq] |= SQUARE_MASKS[_sq(r + 1, c)]
             if r > 4:
-                if _is_valid(r, c - 1): PAWN_ATTACKS[1][sq] |= SQUARE_MASKS[_sq(r, c - 1)]
-                if _is_valid(r, c + 1): PAWN_ATTACKS[1][sq] |= SQUARE_MASKS[_sq(r, c + 1)]
+                if _is_valid(r, c - 1):
+                    PAWN_ATTACKS[1][sq] |= SQUARE_MASKS[_sq(r, c - 1)]
+                if _is_valid(r, c + 1):
+                    PAWN_ATTACKS[1][sq] |= SQUARE_MASKS[_sq(r, c + 1)]
+
 
 _precompute_king_guard_attacks()
 _precompute_bishop_horse_attacks()
 _precompute_pawn_attacks()
+
 
 def _get_slider_moves_in_direction(sq: int, occupied: int, is_cannon: bool, direction: tuple[int, int]) -> int:
     r, c = sq // 9, sq % 9
     dr, dc = direction
     attacks = 0
     screen = False
-    
+
     nr, nc = r + dr, c + dc
     while _is_valid(nr, nc):
         s = _sq(nr, nc)
         is_occupied = occupied & SQUARE_MASKS[s]
-        
-        if not is_cannon: # Rook logic
+
+        if not is_cannon:  # Rook logic
             attacks |= SQUARE_MASKS[s]
             if is_occupied:
                 break
-        else: # Cannon logic
+        else:  # Cannon logic
             if not screen:
                 if not is_occupied:
                     attacks |= SQUARE_MASKS[s]
@@ -112,11 +130,12 @@ def _get_slider_moves_in_direction(sq: int, occupied: int, is_cannon: bool, dire
                 if is_occupied:
                     attacks |= SQUARE_MASKS[s]
                     break
-        
+
         nr += dr
         nc += dc
-        
+
     return attacks
+
 
 def get_rook_moves_bb(sq: int, occupied: int) -> int:
     attacks = 0
@@ -124,11 +143,13 @@ def get_rook_moves_bb(sq: int, occupied: int) -> int:
         attacks |= _get_slider_moves_in_direction(sq, occupied, False, direction)
     return attacks
 
+
 def get_cannon_moves_bb(sq: int, occupied: int) -> int:
     attacks = 0
     for direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
         attacks |= _get_slider_moves_in_direction(sq, occupied, True, direction)
     return attacks
+
 
 def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
     moves = []
@@ -138,7 +159,8 @@ def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
 
     for piece_bb_idx in range(14):
         piece_type = BB_INDEX_TO_PIECE[piece_bb_idx]
-        if Bitboard.get_player(piece_type) != player: continue
+        if Bitboard.get_player(piece_type) != player:
+            continue
 
         piece_bb = bb.piece_bitboards[piece_bb_idx]
         temp_piece_bb = piece_bb
@@ -157,7 +179,8 @@ def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
                 while temp_moves:
                     to_sq = (temp_moves & -temp_moves).bit_length() - 1
                     leg_sq = BISHOP_LEGS[from_sq][to_sq]
-                    if not (occupied & SQUARE_MASKS[leg_sq]): moves_bb |= SQUARE_MASKS[to_sq]
+                    if not (occupied & SQUARE_MASKS[leg_sq]):
+                        moves_bb |= SQUARE_MASKS[to_sq]
                     temp_moves &= temp_moves - 1
             elif piece_type in (R_HORSE, B_HORSE):
                 potential_moves = HORSE_ATTACKS[from_sq]
@@ -165,7 +188,8 @@ def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
                 while temp_moves:
                     to_sq = (temp_moves & -temp_moves).bit_length() - 1
                     leg_sq = HORSE_LEGS[from_sq][to_sq]
-                    if not (occupied & SQUARE_MASKS[leg_sq]): moves_bb |= SQUARE_MASKS[to_sq]
+                    if not (occupied & SQUARE_MASKS[leg_sq]):
+                        moves_bb |= SQUARE_MASKS[to_sq]
                     temp_moves &= temp_moves - 1
             elif piece_type in (R_PAWN, B_PAWN):
                 moves_bb = PAWN_ATTACKS[player_idx][from_sq]
@@ -188,7 +212,7 @@ def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
 def is_square_attacked_by(bb: Bitboard, sq: int, attacker_player: int) -> bool:
     occupied = bb.occupied_bitboard
     attacker_idx = 0 if attacker_player == PLAYER_R else 1
-    
+
     # Pawn attacks
     pawn_attacks = PAWN_ATTACKS[1 - attacker_idx][sq]
     pawn_piece = R_PAWN if attacker_player == PLAYER_R else B_PAWN
@@ -208,12 +232,27 @@ def is_square_attacked_by(bb: Bitboard, sq: int, attacker_player: int) -> bool:
                 return True
             temp_horses &= temp_horses - 1
 
+    # Bishop attacks
+    bishop_attacks = BISHOP_ATTACKS[sq]
+    bishop_piece = R_BISHOP if attacker_player == PLAYER_R else B_BISHOP
+    potential_bishops = bishop_attacks & bb.piece_bitboards[PIECE_TO_BB_INDEX[bishop_piece]]
+    if potential_bishops:
+        side_mask = BLACK_SIDE_MASK if attacker_player == PLAYER_R else RED_SIDE_MASK
+        if side_mask & SQUARE_MASKS[sq]:
+            temp_bishops = potential_bishops
+            while temp_bishops:
+                from_sq = (temp_bishops & -temp_bishops).bit_length() - 1
+                leg_sq = BISHOP_LEGS[from_sq][sq]
+                if not (occupied & SQUARE_MASKS[leg_sq]):
+                    return True
+                temp_bishops &= temp_bishops - 1
+
     # Rook and Cannon attacks (sliders)
     rook_piece = R_ROOK if attacker_player == PLAYER_R else B_ROOK
     cannon_piece = R_CANNON if attacker_player == PLAYER_R else B_CANNON
-    
+
     # Horizontal and Vertical
-    for get_moves_func, piece_type in [(get_rook_moves_bb, rook_piece), (get_cannon_moves_bb, cannon_piece)] :
+    for get_moves_func, piece_type in [(get_rook_moves_bb, rook_piece), (get_cannon_moves_bb, cannon_piece)]:
         attacks = get_moves_func(sq, occupied)
         if attacks & bb.piece_bitboards[PIECE_TO_BB_INDEX[piece_type]]:
             return True
@@ -223,17 +262,19 @@ def is_square_attacked_by(bb: Bitboard, sq: int, attacker_player: int) -> bool:
     king_piece = R_KING if attacker_player == PLAYER_R else B_KING
     if king_attacks & bb.piece_bitboards[PIECE_TO_BB_INDEX[king_piece]]:
         return True
-        
+
     return False
+
 
 def is_check(bb: Bitboard, player: int) -> bool:
     king_piece = R_KING if player == PLAYER_R else B_KING
     king_sq_bb = bb.piece_bitboards[PIECE_TO_BB_INDEX[king_piece]]
     if not king_sq_bb:
-        return True # Should not happen in a legal game
+        return True  # Should not happen in a legal game
     king_sq = (king_sq_bb & -king_sq_bb).bit_length() - 1
-    
+
     return is_square_attacked_by(bb, king_sq, -player)
+
 
 def generate_moves(bb: Bitboard) -> List[Move]:
     """
@@ -244,7 +285,7 @@ def generate_moves(bb: Bitboard) -> List[Move]:
 
     legal_moves = []
     player = bb.player_to_move
-    
+
     pseudo_legal_moves = generate_all_moves(bb, player)
 
     for from_sq, to_sq in pseudo_legal_moves:
@@ -252,5 +293,5 @@ def generate_moves(bb: Bitboard) -> List[Move]:
         if not is_check(bb, player):
             legal_moves.append((from_sq, to_sq))
         bb.unmove_piece(from_sq, to_sq, captured)
-        
+
     return legal_moves

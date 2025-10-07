@@ -120,14 +120,14 @@ class Engine:
             return self._quiescence_search(bb, alpha, beta), None
 
         # --- Null Move Pruning ---
-        R = 2
+        R = 3
         major_pieces_count = 0
         player_idx = bb.get_player_bb_idx(bb.player_to_move)
-        if player_idx == 0: # Red
+        if player_idx == 0:  # Red
             major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[R_ROOK]]).count('1')
             major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[R_HORSE]]).count('1')
             major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[R_CANNON]]).count('1')
-        else: # Black
+        else:  # Black
             major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[B_ROOK]]).count('1')
             major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[B_HORSE]]).count('1')
             major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[B_CANNON]]).count('1')
@@ -142,7 +142,7 @@ class Engine:
             if null_move_score >= beta:
                 self.tt[bb.hash_key] = {'depth': depth, 'score': beta, 'flag': TT_LOWER, 'best_move': None}
                 return beta, None
-        
+
         best_value = -math.inf
         best_move = None
 
@@ -182,14 +182,15 @@ class Engine:
             # its score is 0. The parent node negates it, also to 0.
             # But if the child node is a mate, it returns a mate score relative to ITS OWN depth.
             # We must not simply negate it, but handle the mate score propagation correctly.
-            if child_value is None: continue # Should not happen, but as a safeguard
+            if child_value is None:
+                continue  # Should not happen, but as a safeguard
 
             current_score = -child_value
 
             if current_score > best_value:
                 best_value = current_score
                 best_move = (sq_to_coord(from_sq), sq_to_coord(to_sq))
-            
+
             alpha = max(alpha, best_value)
 
             if alpha >= beta:
@@ -227,8 +228,8 @@ class Engine:
                 score, move = self._negamax(board_copy, i, -MATE_VALUE, MATE_VALUE, allow_null=True)
                 if move is not None:
                     last_completed_move = move
-                
-                if abs(score) > (MATE_VALUE - 100): # Check for mate scores (with a margin for depth)
+
+                if abs(score) > (MATE_VALUE - 100):  # Check for mate scores (with a margin for depth)
                     break
         except StopSearchException:
             pass
@@ -249,6 +250,6 @@ class Engine:
             score, move = self._negamax(board_copy, i, -MATE_VALUE, MATE_VALUE, allow_null=True)
             if move is not None:
                 last_good_move = move
-            if abs(score) > (MATE_VALUE - 100): # Stop if a mate is found
+            if abs(score) > (MATE_VALUE - 100):  # Stop if a mate is found
                 break
         return score, last_good_move
