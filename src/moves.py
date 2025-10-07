@@ -250,7 +250,7 @@ def generate_moves(bb: Bitboard) -> List[Move]:
     for from_sq, to_sq in pseudo_legal_moves:
         captured = bb.move_piece(from_sq, to_sq)
         if not is_check(bb, player):
-            legal_moves.append((sq_to_coord(from_sq), sq_to_coord(to_sq)))
+            legal_moves.append((from_sq, to_sq))
         bb.unmove_piece(from_sq, to_sq, captured)
         
     return legal_moves
