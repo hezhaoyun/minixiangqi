@@ -49,11 +49,9 @@ def draw_board():
     screen.fill(BOARD_COLOR)
     # 绘制棋盘网格线
     for i in range(10):
-        pygame.draw.aaline(screen, LINE_COLOR,
-                           (30, 30 + i * 60), (510, 30 + i * 60))
+        pygame.draw.aaline(screen, LINE_COLOR, (30, 30 + i * 60), (510, 30 + i * 60))
     for i in range(9):
-        pygame.draw.aaline(screen, LINE_COLOR,
-                           (30 + i * 60, 30), (30 + i * 60, 570))
+        pygame.draw.aaline(screen, LINE_COLOR, (30 + i * 60, 30), (30 + i * 60, 570))
 
     # 绘制楚河汉界
     pygame.draw.rect(screen, BOARD_COLOR, (31, 271, 479, 59))
@@ -87,8 +85,7 @@ def draw_pieces():
                 if (r, c) == selected_piece_pos:
                     fill_color = (173, 216, 230)  # 淡蓝色
 
-                pygame.gfxdraw.filled_circle(
-                    screen, x, y, PIECE_RADIUS, fill_color)
+                pygame.gfxdraw.filled_circle(screen, x, y, PIECE_RADIUS, fill_color)
                 pygame.gfxdraw.aacircle(screen, x, y, PIECE_RADIUS, LINE_COLOR)
 
                 # 绘制棋子文字
@@ -103,10 +100,8 @@ def draw_last_move():
         from_r, from_c = last_move[0]
         to_r, to_c = last_move[1]
         # 在起始和目标位置绘制标记
-        pygame.gfxdraw.filled_circle(
-            screen, from_c * 60 + 30, from_r * 60 + 30, 10, (0, 128, 0, 200))
-        pygame.gfxdraw.filled_circle(
-            screen, to_c * 60 + 30, to_r * 60 + 30, 5, (0, 128, 0, 200))
+        pygame.gfxdraw.filled_circle(screen, from_c * 60 + 30, from_r * 60 + 30, 10, (0, 128, 0, 200))
+        pygame.gfxdraw.filled_circle(screen, to_c * 60 + 30, to_r * 60 + 30, 5, (0, 128, 0, 200))
 
 
 def is_game_over(board):
@@ -140,8 +135,7 @@ def main():
             # --- 键盘事件处理 ---
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_t:  # T键: 加载测试FEN局面
-                    board = Board(
-                        '3aka2r/4n4/9/p5p1p/c1R1p4/4P1P2/P7P/N1CnB4/4C4/2BAKA3 w - - 0 1')
+                    board = Board('3aka2r/4n4/9/p5p1p/c1R1p4/4P1P2/P7P/N1CnB4/4C4/2BAKA3 w - - 0 1')
                     selected_piece_pos = None
                     last_move = None
                     move_history = []
@@ -160,14 +154,12 @@ def main():
                         move, captured = move_history.pop()
                         from_r, from_c = move[0]
                         to_r, to_c = move[1]
-                        board.unmove_piece(
-                            from_r * 9 + from_c, to_r * 9 + to_c, captured)
+                        board.unmove_piece(from_r * 9 + from_c, to_r * 9 + to_c, captured)
                         # 撤销玩家的走法
                         move, captured = move_history.pop()
                         from_r, from_c = move[0]
                         to_r, to_c = move[1]
-                        board.unmove_piece(
-                            from_r * 9 + from_c, to_r * 9 + to_c, captured)
+                        board.unmove_piece(from_r * 9 + from_c, to_r * 9 + to_c, captured)
                         last_move = None
                         selected_piece_pos = None
 
@@ -211,15 +203,11 @@ def main():
                             pygame.time.wait(300)  # 短暂延迟，改善体验
 
                             # 显示“引擎思考中”的提示
-                            overlay = pygame.Surface(
-                                (SCREEN_WIDTH, 100), pygame.SRCALPHA)
+                            overlay = pygame.Surface((SCREEN_WIDTH, 100), pygame.SRCALPHA)
                             overlay.fill((255, 255, 255, 220))
-                            screen.blit(
-                                overlay, (0, SCREEN_HEIGHT / 2 - 100 / 2))
-                            think_text = font.render(
-                                'Engine is thinking...', True, (0, 0, 0))
-                            text_rect = think_text.get_rect(
-                                center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+                            screen.blit(overlay, (0, SCREEN_HEIGHT / 2 - 100 / 2))
+                            think_text = font.render('Engine is thinking...', True, (0, 0, 0))
+                            text_rect = think_text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
                             screen.blit(think_text, text_rect)
                             pygame.display.flip()
 
@@ -229,10 +217,8 @@ def main():
                                 from_r, from_c = engine_move[0]
                                 to_r, to_c = engine_move[1]
                                 from_sq, to_sq = from_r * 9 + from_c, to_r * 9 + to_c
-                                captured_piece = board.move_piece(
-                                    from_sq, to_sq)
-                                move_history.append(
-                                    (engine_move, captured_piece))
+                                captured_piece = board.move_piece(from_sq, to_sq)
+                                move_history.append((engine_move, captured_piece))
                                 last_move = engine_move
 
                                 # 检查游戏是否结束
@@ -261,8 +247,7 @@ def main():
             overlay.fill((255, 255, 255, 220))
             screen.blit(overlay, (0, SCREEN_HEIGHT / 2 - 100 / 2))
             result_text = font.render(game_result_message, True, (0, 0, 0))
-            text_rect = result_text.get_rect(
-                center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+            text_rect = result_text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
             screen.blit(result_text, text_rect)
 
         pygame.display.flip()

@@ -74,8 +74,7 @@ class Engine:
         try:
             with open('''opening_book.json''', 'r') as f:
                 book_str_keys = json.load(f)
-                self.opening_book = {int(k): [tuple(
-                    map(tuple, move)) for move in v] for k, v in book_str_keys.items()}
+                self.opening_book = {int(k): [tuple(map(tuple, move)) for move in v] for k, v in book_str_keys.items()}
             print('开局库加载成功。')
         except FileNotFoundError:
             print('未找到开局库文件, 将不使用开局库。')
@@ -203,33 +202,25 @@ class Engine:
         major_pieces_count = 0
         player_idx = bb.get_player_bb_idx(bb.player_to_move)
         if player_idx == 0:  # Red
-            major_pieces_count += bin(
-                bb.piece_bitboards[PIECE_TO_BB_INDEX[R_ROOK]]).count('1')
-            major_pieces_count += bin(
-                bb.piece_bitboards[PIECE_TO_BB_INDEX[R_HORSE]]).count('1')
-            major_pieces_count += bin(
-                bb.piece_bitboards[PIECE_TO_BB_INDEX[R_CANNON]]).count('1')
+            major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[R_ROOK]]).count('1')
+            major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[R_HORSE]]).count('1')
+            major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[R_CANNON]]).count('1')
         else:  # Black
-            major_pieces_count += bin(
-                bb.piece_bitboards[PIECE_TO_BB_INDEX[B_ROOK]]).count('1')
-            major_pieces_count += bin(
-                bb.piece_bitboards[PIECE_TO_BB_INDEX[B_HORSE]]).count('1')
-            major_pieces_count += bin(
-                bb.piece_bitboards[PIECE_TO_BB_INDEX[B_CANNON]]).count('1')
+            major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[B_ROOK]]).count('1')
+            major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[B_HORSE]]).count('1')
+            major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[B_CANNON]]).count('1')
 
         is_in_check = moves.is_check(bb, bb.player_to_move)
 
         if allow_null and not is_in_check and depth >= 3 and major_pieces_count > 1:
             bb.player_to_move *= -1
             bb.hash_key ^= zobrist_player
-            null_move_score, _ = self._negamax(
-                bb, depth - 1 - R, -beta, -beta + 1, allow_null=False)
+            null_move_score, _ = self._negamax(bb, depth - 1 - R, -beta, -beta + 1, allow_null=False)
             null_move_score = -null_move_score
             bb.player_to_move *= -1
             bb.hash_key ^= zobrist_player
             if null_move_score >= beta:
-                self.tt[bb.hash_key] = {
-                    'depth': depth, 'score': beta, 'flag': TT_LOWER, 'best_move': None}
+                self.tt[bb.hash_key] = {'depth': depth, 'score': beta, 'flag': TT_LOWER, 'best_move': None}
                 return beta, None
 
         best_value = -math.inf
@@ -255,8 +246,7 @@ class Engine:
             captured_piece = bb.get_piece_on_square(to_sq)
             if captured_piece != EMPTY:
                 moving_piece = bb.get_piece_on_square(from_sq)
-                score = 1000 + abs(PIECE_VALUES.get(captured_piece, 0)) - \
-                    abs(PIECE_VALUES.get(moving_piece, 0))
+                score = 1000 + abs(PIECE_VALUES.get(captured_piece, 0)) - abs(PIECE_VALUES.get(moving_piece, 0))
             else:
                 moving_piece = bb.get_piece_on_square(from_sq)
                 if moving_piece != EMPTY:
@@ -285,14 +275,12 @@ class Engine:
             captured_piece = bb.move_piece(from_sq, to_sq)
 
             # 使用缩减后的深度进行搜索
-            child_value, _ = self._negamax(
-                bb, depth - 1 - reduction, -beta, -alpha, allow_null=True)
+            child_value, _ = self._negamax(bb, depth - 1 - reduction, -beta, -alpha, allow_null=True)
 
             # 如果缩减深度的搜索结果意外地好（突破了alpha），
             # 那说明这个走法可能是个“漏网之鱼”，需要用完整深度重新搜索一次。
             if reduction > 0 and -child_value > alpha:
-                child_value, _ = self._negamax(
-                    bb, depth - 1, -beta, -alpha, allow_null=True)
+                child_value, _ = self._negamax(bb, depth - 1, -beta, -alpha, allow_null=True)
 
             bb.unmove_piece(from_sq, to_sq, captured_piece)
 
@@ -326,8 +314,7 @@ class Engine:
         elif best_value >= beta:
             flag = TT_LOWER
 
-        self.tt[bb.hash_key] = {
-            'depth': depth, 'score': best_value, 'flag': flag, 'best_move': best_move}
+        self.tt[bb.hash_key] = {'depth': depth, 'score': best_value, 'flag': flag, 'best_move': best_move}
         return best_value, best_move
 
     def search_by_time(self, bb: Bitboard, time_limit_seconds: float) -> Tuple[float, Optional[Move]]:
@@ -359,8 +346,7 @@ class Engine:
         try:
             # 迭代加深搜索
             for i in range(1, 64):
-                score, move = self._negamax(
-                    board_copy, i, -MATE_VALUE, MATE_VALUE, allow_null=True)
+                score, move = self._negamax(board_copy, i, -MATE_VALUE, MATE_VALUE, allow_null=True)
                 if move is not None:
                     last_completed_move = move
 
@@ -394,8 +380,7 @@ class Engine:
         score, move = -math.inf, None
         last_good_move = None
         for i in range(1, depth + 1):
-            score, move = self._negamax(
-                board_copy, i, -MATE_VALUE, MATE_VALUE, allow_null=True)
+            score, move = self._negamax(board_copy, i, -MATE_VALUE, MATE_VALUE, allow_null=True)
             if move is not None:
                 last_good_move = move
             if abs(score) > (MATE_VALUE - 100):  # Stop if a mate is found

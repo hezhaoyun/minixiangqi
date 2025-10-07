@@ -5,6 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "profile_search_archive",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.profile_search_archive"
+        },
+        {
             "name": "moves_gen",
             "type": "debugpy",
             "request": "launch",

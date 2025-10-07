@@ -44,8 +44,7 @@ class Bitboard:
     使用一组整数来表示棋盘状态，使得操作可以通过高效的位运算完成。
 
     Attributes:
-        piece_bitboards (list[int]): 14个位棋盘，每种特定类型的棋子一个 (例如, 红车、黑马)。
-                                     数组索引由 `PIECE_TO_BB_INDEX` 决定。
+        piece_bitboards (list[int]): 14个位棋盘，每种特定类型的棋子一个 (例如, 红车、黑马)。数组索引由 `PIECE_TO_BB_INDEX` 决定。
         color_bitboards (list[int]): 2个位棋盘，一个用于红方所有棋子，一个用于黑方所有棋子。
         player_to_move (int): 当前走棋方 (PLAYER_R 或 PLAYER_B)。
         hash_key (int): 当前局面的Zobrist哈希值。
@@ -121,8 +120,7 @@ class Bitboard:
 
     def setup_default_position(self):
         """设置中国象棋的默认开局局面。"""
-        self.parse_fen(
-            "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1")
+        self.parse_fen("rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1")
 
     def _set_piece(self, piece_type: int, sq: int):
         """
@@ -138,8 +136,7 @@ class Bitboard:
         # 更新颜色位棋盘
         self.color_bitboards[self.get_player_bb_idx(player)] |= mask
         # 更新Zobrist哈希
-        self.hash_key ^= zobrist_keys[Bitboard.piece_to_zobrist_idx(
-            piece_type)][r][c]
+        self.hash_key ^= zobrist_keys[Bitboard.piece_to_zobrist_idx(piece_type)][r][c]
 
     def move_piece(self, from_sq: int, to_sq: int) -> int:
         """
@@ -173,8 +170,7 @@ class Bitboard:
         # 异或一个包含起始和目标位置的掩码，相当于将棋子从from_sq移动到to_sq
         move_mask = SQUARE_MASKS[from_sq] | SQUARE_MASKS[to_sq]
         self.piece_bitboards[PIECE_TO_BB_INDEX[moving_piece]] ^= move_mask
-        self.color_bitboards[self.get_player_bb_idx(
-            self.player_to_move)] ^= move_mask
+        self.color_bitboards[self.get_player_bb_idx(self.player_to_move)] ^= move_mask
 
         # 3. 如果有吃子，处理被吃掉的棋子
         if captured_piece != EMPTY:
@@ -183,10 +179,8 @@ class Bitboard:
             self.hash_key ^= zobrist_keys[captured_z_idx][r_to][c_to]
             # 从位棋盘中移除被吃掉的棋子
             capture_mask = CLEAR_MASKS[to_sq]
-            self.piece_bitboards[PIECE_TO_BB_INDEX[captured_piece]
-                                 ] &= capture_mask
-            self.color_bitboards[self.get_player_bb_idx(
-                Bitboard.get_player(captured_piece))] &= capture_mask
+            self.piece_bitboards[PIECE_TO_BB_INDEX[captured_piece]] &= capture_mask
+            self.color_bitboards[self.get_player_bb_idx(Bitboard.get_player(captured_piece))] &= capture_mask
 
         # 4. 切换走棋方并更新哈希
         self.player_to_move *= -1
@@ -214,8 +208,7 @@ class Bitboard:
         # 2. 将移动的棋子从 to_sq 移回 from_sq
         move_mask = SQUARE_MASKS[from_sq] | SQUARE_MASKS[to_sq]
         self.piece_bitboards[PIECE_TO_BB_INDEX[moving_piece]] ^= move_mask
-        self.color_bitboards[self.get_player_bb_idx(
-            self.player_to_move)] ^= move_mask
+        self.color_bitboards[self.get_player_bb_idx(self.player_to_move)] ^= move_mask
         # 恢复Zobrist哈希
         moving_z_idx = Bitboard.piece_to_zobrist_idx(moving_piece)
         self.hash_key ^= zobrist_keys[moving_z_idx][r_from][c_from]
@@ -225,10 +218,8 @@ class Bitboard:
         if captured_piece != EMPTY:
             capture_mask = SQUARE_MASKS[to_sq]
             captured_player = Bitboard.get_player(captured_piece)
-            self.piece_bitboards[PIECE_TO_BB_INDEX[captured_piece]
-                                 ] |= capture_mask
-            self.color_bitboards[self.get_player_bb_idx(
-                captured_player)] |= capture_mask
+            self.piece_bitboards[PIECE_TO_BB_INDEX[captured_piece]] |= capture_mask
+            self.color_bitboards[self.get_player_bb_idx(captured_player)] |= capture_mask
             # 恢复被吃棋子的Zobrist哈希
             captured_z_idx = Bitboard.piece_to_zobrist_idx(captured_piece)
             self.hash_key ^= zobrist_keys[captured_z_idx][r_to][c_to]
@@ -256,8 +247,7 @@ class Bitboard:
         """返回一个用于调试的、人类可读的棋盘字符串表示。"""
         builder = []
         for r in range(10):
-            row_str = [PIECE_TO_FEN_CHAR.get(
-                self.get_piece_on_square(r * 9 + c), '.') for c in range(9)]
+            row_str = [PIECE_TO_FEN_CHAR.get(self.get_piece_on_square(r * 9 + c), '.') for c in range(9)]
             builder.append(" ".join(row_str))
         return "\n".join(builder)
 

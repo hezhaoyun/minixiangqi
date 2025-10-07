@@ -35,7 +35,7 @@ def _initialize_zobrist_keys():
     """
     global zobrist_player
     # 使用固定种子以确保每次生成的随机数都一样
-    random.seed(826)
+    random.seed(0)
 
     for i in range(14):
         for r in range(10):

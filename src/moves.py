@@ -171,8 +171,7 @@ def get_rook_moves_bb(sq: int, occupied: int) -> int:
     """
     attacks = 0
     for direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-        attacks |= _get_slider_moves_in_direction(
-            sq, occupied, False, direction)
+        attacks |= _get_slider_moves_in_direction(sq, occupied, False, direction)
     return attacks
 
 
@@ -182,8 +181,7 @@ def get_cannon_moves_bb(sq: int, occupied: int) -> int:
     """
     attacks = 0
     for direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-        attacks |= _get_slider_moves_in_direction(
-            sq, occupied, True, direction)
+        attacks |= _get_slider_moves_in_direction(sq, occupied, True, direction)
     return attacks
 
 

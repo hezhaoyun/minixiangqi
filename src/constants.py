@@ -10,8 +10,7 @@
 # 负数代表黑方，正数代表红方。
 
 # 黑方 (Black)
-B_KING, B_GUARD, B_BISHOP, B_HORSE, B_ROOK, B_CANNON, B_PAWN = - \
-    1, -2, -3, -4, -5, -6, -7
+B_KING, B_GUARD, B_BISHOP, B_HORSE, B_ROOK, B_CANNON, B_PAWN = -1, -2, -3, -4, -5, -6, -7
 # 红方 (Red)
 R_KING, R_GUARD, R_BISHOP, R_HORSE, R_ROOK, R_CANNON, R_PAWN = 1, 2, 3, 4, 5, 6, 7
 # 空白位置
