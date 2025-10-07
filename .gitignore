@@ -1,3 +1,5 @@
 venv/
 __pycache__/
 opening_book.json
+javachess/
+cmp_javachess.md
