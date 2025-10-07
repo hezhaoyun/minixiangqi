@@ -247,22 +247,36 @@ def is_square_attacked_by(bb: Bitboard, sq: int, attacker_player: int) -> bool:
                     return True
                 temp_bishops &= temp_bishops - 1
 
-    # Rook and Cannon attacks (sliders)
-    rook_piece = R_ROOK if attacker_player == PLAYER_R else B_ROOK
-    cannon_piece = R_CANNON if attacker_player == PLAYER_R else B_CANNON
-
-    # Horizontal and Vertical
-    for get_moves_func, piece_type in [(get_rook_moves_bb, rook_piece), (get_cannon_moves_bb, cannon_piece)]:
-        attacks = get_moves_func(sq, occupied)
-        if attacks & bb.piece_bitboards[PIECE_TO_BB_INDEX[piece_type]]:
-            return True
-
     # King attacks
     king_attacks = KING_ATTACKS[sq]
     king_piece = R_KING if attacker_player == PLAYER_R else B_KING
     if king_attacks & bb.piece_bitboards[PIECE_TO_BB_INDEX[king_piece]]:
         return True
 
+    # Rook and Cannon attacks (sliders)
+    rook_piece = R_ROOK if attacker_player == PLAYER_R else B_ROOK
+    cannon_piece = R_CANNON if attacker_player == PLAYER_R else B_CANNON
+    r, c = sq // 9, sq % 9
+
+    for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+        screen = False
+        nr, nc = r + dr, c + dc
+        while _is_valid(nr, nc):
+            s = _sq(nr, nc)
+            if occupied & SQUARE_MASKS[s]:
+                if not screen:
+                    # First piece in this direction
+                    if bb.piece_bitboards[PIECE_TO_BB_INDEX[rook_piece]] & SQUARE_MASKS[s]:
+                        return True
+                    screen = True
+                else:
+                    # Second piece in this direction
+                    if bb.piece_bitboards[PIECE_TO_BB_INDEX[cannon_piece]] & SQUARE_MASKS[s]:
+                        return True
+                    break  # Blocked for cannon
+            nr += dr
+            nc += dc
+            
     return False
 
 
