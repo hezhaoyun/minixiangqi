@@ -10,8 +10,7 @@ from typing import Dict, Optional, Tuple
 from src.bitboard import Bitboard, PIECE_TO_BB_INDEX
 from src.evaluate import evaluate
 import src.moves as moves
-
-# --- Old Board for API compatibility ---
+from src.zobrist import zobrist_player
 
 
 from src.constants import *
@@ -78,7 +77,7 @@ class Engine:
         for from_sq, to_sq in all_legal_moves:
             if (opponent_pieces_bb >> to_sq) & 1:
                 capture_moves.append((from_sq, to_sq))
-        
+
         # TODO: Implement MVV-LVA move ordering here for captures
 
         for from_sq, to_sq in capture_moves:
@@ -90,7 +89,7 @@ class Engine:
                 return beta
             if score > alpha:
                 alpha = score
-        
+
         return alpha
 
     def _check_time(self):
@@ -98,9 +97,13 @@ class Engine:
             if self.time_limit > 0 and time.time() - self.start_time >= self.time_limit:
                 raise StopSearchException()
 
-    def _negamax(self, bb: Bitboard, depth: int, alpha: float, beta: float) -> Tuple[float, Optional[Move]]:
+    def _negamax(self, bb: Bitboard, depth: int, alpha: float, beta: float, allow_null: bool = True) -> Tuple[float, Optional[Move]]:
         self.nodes_searched += 1
         self._check_time()
+
+        # Repetition check
+        if bb.history.count(bb.hash_key) > 1:
+            return 0, None
 
         original_alpha = alpha
         tt_entry = self.tt.get(bb.hash_key)
@@ -116,15 +119,34 @@ class Engine:
             if alpha >= beta:
                 return score, best_move
 
-        if depth == 0:
+        if depth <= 0:
             return self._quiescence_search(bb, alpha, beta), None
+
+        # --- Null Move Pruning ---
+        R = 3  # Depth reduction factor
+        if allow_null and depth >= 3 and not moves.is_check(bb, bb.player_to_move):
+            # Make a null move
+            bb.player_to_move *= -1
+            bb.hash_key ^= zobrist_player
+
+            null_move_score, _ = self._negamax(bb, depth - 1 - R, -beta, -beta + 1, allow_null=False)
+            null_move_score = -null_move_score
+
+            # Unmake the null move
+            bb.player_to_move *= -1
+            bb.hash_key ^= zobrist_player
+
+            if null_move_score >= beta:
+                # Store TT entry for null move cutoff
+                self.tt[bb.hash_key] = {'depth': depth, 'score': beta, 'flag': TT_LOWER, 'best_move': None}
+                return beta, None
+        # --- End Null Move Pruning ---
 
         best_value, best_move = -math.inf, None
 
         def sq_to_coord(sq: int) -> tuple[int, int]:
             return sq // 9, sq % 9
 
-        # Generate legal moves
         legal_moves = moves.generate_moves(bb)
 
         if not legal_moves:
@@ -132,40 +154,40 @@ class Engine:
                 return -MATE_VALUE, None  # Checkmate
             return DRAW_VALUE, None  # Stalemate
 
-        # --- Move Ordering (MVV-LVA) ---
         move_scores = []
         for from_sq, to_sq in legal_moves:
             score = 0
             captured_piece = bb.get_piece_on_square(to_sq)
             if captured_piece != EMPTY:
                 moving_piece = bb.get_piece_on_square(from_sq)
-                # Add a large bonus for captures, then use MVV-LVA
-                score = 1000 + abs(PIECE_VALUES[captured_piece]) - abs(PIECE_VALUES[moving_piece])
+                score = 1000 + abs(PIECE_VALUES.get(captured_piece, 0)) - abs(PIECE_VALUES.get(moving_piece, 0))
+            else:
+                # Use history table for quiet moves
+                moving_piece = bb.get_piece_on_square(from_sq)
+                if moving_piece != EMPTY:
+                    piece_idx = Bitboard.piece_to_zobrist_idx(moving_piece)
+                    score = self.history_table[piece_idx][to_sq]
             move_scores.append(((from_sq, to_sq), score))
-        
+
         sorted_moves = sorted(move_scores, key=lambda x: x[1], reverse=True)
 
         for move, _ in sorted_moves:
             from_sq, to_sq = move
             captured_piece = bb.move_piece(from_sq, to_sq)
 
-            if bb.history.count(bb.hash_key) > 1:
-                current_score = 0
-            else:
-                child_value, _ = self._negamax(bb, depth - 1, -beta, -alpha)
-                current_score = -child_value
+            child_value, _ = self._negamax(bb, depth - 1, -beta, -alpha, allow_null=True)
+            current_score = -child_value
+
+            bb.unmove_piece(from_sq, to_sq, captured_piece)
 
             if current_score > best_value:
                 best_value = current_score
                 best_move = (sq_to_coord(from_sq), sq_to_coord(to_sq))
 
-            bb.unmove_piece(from_sq, to_sq, captured_piece)
-
             alpha = max(alpha, best_value)
 
             if alpha >= beta:
                 if captured_piece == EMPTY:
-                    # After unmove, the piece is back at from_sq
                     moving_piece = bb.get_piece_on_square(from_sq)
                     if moving_piece != EMPTY:
                         piece_idx = Bitboard.piece_to_zobrist_idx(moving_piece)
@@ -196,7 +218,7 @@ class Engine:
 
         try:
             for i in range(1, 64):
-                score, move = self._negamax(board_copy, i, -math.inf, math.inf)
+                score, move = self._negamax(board_copy, i, -math.inf, math.inf, allow_null=True)
                 if move:
                     last_completed_move = move
                 if abs(score) > (MATE_VALUE / 2):
@@ -215,5 +237,5 @@ class Engine:
         self._clear_history_table()
         score, move = -math.inf, None
         for i in range(1, depth + 1):
-            score, move = self._negamax(board_copy, i, -math.inf, math.inf)
+            score, move = self._negamax(board_copy, i, -math.inf, math.inf, allow_null=True)
         return score, move
