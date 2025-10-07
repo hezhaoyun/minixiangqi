@@ -134,6 +134,8 @@ def evaluate(bb: Bitboard) -> int:
 
     # 1. Calculate material score efficiently using popcount
     for piece_type, value in PIECE_VALUES.items():
+        if piece_type == EMPTY:
+            continue
         count = popcount(bb.piece_bitboards[PIECE_TO_BB_INDEX[piece_type]])
         material_score += count * value
 

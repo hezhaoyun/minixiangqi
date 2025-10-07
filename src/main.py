@@ -147,14 +147,22 @@ def main():
 
                 if selected_piece_pos:
                     from_r, from_c = selected_piece_pos
-                    move = ((from_r, from_c), (r, c))
-                    legal_moves = generate_moves(board)
+                    to_r, to_c = r, c
 
-                    if move in legal_moves:
-                        from_sq, to_sq = from_r * 9 + from_c, r * 9 + c
+                    # Convert UI move to square index format for legality check
+                    from_sq, to_sq = from_r * 9 + from_c, to_r * 9 + to_c
+                    move_sq = (from_sq, to_sq)
+
+                    # generate_moves now returns moves in square index format
+                    legal_moves_sq = generate_moves(board)
+
+                    if move_sq in legal_moves_sq:
                         captured_piece = board.move_piece(from_sq, to_sq)
-                        move_history.append((move, captured_piece))
-                        last_move = move
+
+                        # Store history in coordinate format, as before
+                        coord_move = ((from_r, from_c), (to_r, to_c))
+                        move_history.append((coord_move, captured_piece))
+                        last_move = coord_move
                         selected_piece_pos = None
                         draw_board()
                         draw_pieces()

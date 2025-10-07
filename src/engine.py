@@ -85,7 +85,7 @@ class Engine:
 
         if depth == 0:
             # Quiescence search would go here
-            return evaluate(bb) * bb.player_to_move, None
+            return evaluate(bb), None
 
         best_value, best_move = -math.inf, None
 
