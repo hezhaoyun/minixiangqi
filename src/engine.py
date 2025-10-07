@@ -60,6 +60,39 @@ class Engine:
             return self.book_random.choice(self.opening_book[bb.hash_key])
         return None
 
+    def _quiescence_search(self, bb: Bitboard, alpha: float, beta: float) -> float:
+        self.nodes_searched += 1
+        self._check_time()
+
+        score = evaluate(bb)
+
+        if score >= beta:
+            return beta
+        if score > alpha:
+            alpha = score
+
+        all_legal_moves = moves.generate_moves(bb)
+        capture_moves = []
+        opponent_idx = 1 - bb.get_player_bb_idx(bb.player_to_move)
+        opponent_pieces_bb = bb.color_bitboards[opponent_idx]
+        for from_sq, to_sq in all_legal_moves:
+            if (opponent_pieces_bb >> to_sq) & 1:
+                capture_moves.append((from_sq, to_sq))
+        
+        # TODO: Implement MVV-LVA move ordering here for captures
+
+        for from_sq, to_sq in capture_moves:
+            captured_piece = bb.move_piece(from_sq, to_sq)
+            score = -self._quiescence_search(bb, -beta, -alpha)
+            bb.unmove_piece(from_sq, to_sq, captured_piece)
+
+            if score >= beta:
+                return beta
+            if score > alpha:
+                alpha = score
+        
+        return alpha
+
     def _check_time(self):
         if (self.nodes_searched & 2047) == 0:
             if self.time_limit > 0 and time.time() - self.start_time >= self.time_limit:
@@ -84,8 +117,7 @@ class Engine:
                 return score, best_move
 
         if depth == 0:
-            # Quiescence search would go here
-            return evaluate(bb), None
+            return self._quiescence_search(bb, alpha, beta), None
 
         best_value, best_move = -math.inf, None
 
@@ -95,14 +127,26 @@ class Engine:
         # Generate legal moves
         legal_moves = moves.generate_moves(bb)
 
-        # TODO: Implement move ordering with history heuristic for bitboard moves
-
         if not legal_moves:
             if moves.is_check(bb, bb.player_to_move):
                 return -MATE_VALUE, None  # Checkmate
             return DRAW_VALUE, None  # Stalemate
 
+        # --- Move Ordering (MVV-LVA) ---
+        move_scores = []
         for from_sq, to_sq in legal_moves:
+            score = 0
+            captured_piece = bb.get_piece_on_square(to_sq)
+            if captured_piece != EMPTY:
+                moving_piece = bb.get_piece_on_square(from_sq)
+                # Add a large bonus for captures, then use MVV-LVA
+                score = 1000 + abs(PIECE_VALUES[captured_piece]) - abs(PIECE_VALUES[moving_piece])
+            move_scores.append(((from_sq, to_sq), score))
+        
+        sorted_moves = sorted(move_scores, key=lambda x: x[1], reverse=True)
+
+        for move, _ in sorted_moves:
+            from_sq, to_sq = move
             captured_piece = bb.move_piece(from_sq, to_sq)
 
             if bb.history.count(bb.hash_key) > 1:

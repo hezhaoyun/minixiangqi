@@ -85,6 +85,7 @@ def draw_last_move():
         pygame.gfxdraw.filled_circle(screen, from_c * 60 + 30, from_r * 60 + 30, 10, (0, 128, 0, 200))
         pygame.gfxdraw.filled_circle(screen, to_c * 60 + 30, to_r * 60 + 30, 5, (0, 128, 0, 200))
 
+
 def is_game_over(board):
     """
     Check if the game is over. Returns the result message if so, otherwise None.
@@ -96,6 +97,7 @@ def is_game_over(board):
         else:
             return '和棋'
     return None
+
 
 def main():
     global selected_piece_pos, board, last_move, move_history, game_over, game_result_message
@@ -188,7 +190,7 @@ def main():
 
                             # Engine's turn
                             _, engine_move = engine.search_by_time(board, 3.0)
-                            # _, engine_move = engine.search_by_depth(board, 5)
+                            # _, engine_move = engine.search_by_depth(board, 4)
                             if engine_move:
                                 from_r, from_c = engine_move[0]
                                 to_r, to_c = engine_move[1]

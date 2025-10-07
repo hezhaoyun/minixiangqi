@@ -80,7 +80,7 @@ PATTERN_BONUS = {'BOTTOM_CANNON': 80, 'PALACE_HEART_HORSE': 70, 'CONNECTED_HORSE
 DYNAMIC_BONUS = {'ATTACK_PER_MISSING_DEFENDER': 15,}
 
 def popcount(bb: int) -> int:
-    return bin(bb).count('1')
+    return bb.bit_count()
 
 def calculate_mobility_score(bb: Bitboard) -> int:
     mobility_score = 0
@@ -174,9 +174,9 @@ def evaluate(bb: Bitboard) -> int:
             temp_bb &= temp_bb - 1
 
     # --- Final Score ---
-    mobility_score = calculate_mobility_score(bb)
+    # mobility_score = calculate_mobility_score(bb)
     # The score is from Red's perspective. We adjust it for the current player.
-    final_score = material_score + pst_score + mobility_score
+    final_score = material_score + pst_score # + mobility_score
     
     # Return score from the perspective of the current player to move
     return int(final_score * bb.player_to_move)
