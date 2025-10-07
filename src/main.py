@@ -2,9 +2,10 @@
 import pygame
 import sys
 import os
-from src.board import Board
+from src.bitboard import Bitboard as Board
 from src.engine import Engine
-from src.moves_gen import generate_moves
+from src.moves_gen_bitboard import generate_moves, is_check
+from src.constants import PLAYER_B
 import pygame.gfxdraw
 
 # --- Constants ---
@@ -60,7 +61,7 @@ def draw_pieces():
 
     for r in range(10):
         for c in range(9):
-            piece = board.board[r][c]
+            piece = board.get_piece_on_square(r * 9 + c)
             if piece != 0:
                 player = 1 if piece > 0 else -1
                 x, y = 30 + c * 60, 30 + r * 60
@@ -84,6 +85,20 @@ def draw_last_move():
         pygame.gfxdraw.filled_circle(screen, from_c * 60 + 30, from_r * 60 + 30, 10, (0, 128, 0, 200))
         pygame.gfxdraw.filled_circle(screen, to_c * 60 + 30, to_r * 60 + 30, 5, (0, 128, 0, 200))
 
+def is_game_over(board):
+    """
+    Check if the game is over.
+    """
+    moves = generate_moves(board)
+    if len(moves) == 0:
+        if is_check(board, board.player_to_move):
+            if board.player_to_move == PLAYER_B:
+                return 'checkmate', '红方胜'
+            else:
+                return 'checkmate', '黑方胜'
+        else:
+            return 'stalemate', '和棋'
+    return 'in_progress', ''
 
 def main():
     global selected_piece_pos, board, last_move, move_history, game_over, game_result_message
@@ -113,10 +128,16 @@ def main():
                     if len(move_history) >= 2:
                         # Undo engine's move
                         move, captured = move_history.pop()
-                        board.unmake_move(move, captured)
+                        from_r, from_c = move[0]
+                        to_r, to_c = move[1]
+                        from_sq, to_sq = from_r * 9 + from_c, to_r * 9 + to_c
+                        board.unmove_piece(from_sq, to_sq, captured)
                         # Undo player's move
                         move, captured = move_history.pop()
-                        board.unmake_move(move, captured)
+                        from_r, from_c = move[0]
+                        to_r, to_c = move[1]
+                        from_sq, to_sq = from_r * 9 + from_c, to_r * 9 + to_c
+                        board.unmove_piece(from_sq, to_sq, captured)
                         last_move = None
                         selected_piece_pos = None
 
@@ -133,7 +154,8 @@ def main():
                     legal_moves = generate_moves(board)
 
                     if move in legal_moves:
-                        captured_piece = board.make_move(move)
+                        from_sq, to_sq = from_r * 9 + from_c, r * 9 + c
+                        captured_piece = board.move_piece(from_sq, to_sq)
                         move_history.append((move, captured_piece))
                         last_move = move
                         selected_piece_pos = None
@@ -143,7 +165,7 @@ def main():
                         pygame.display.flip()
 
                         # 检查游戏是否结束
-                        status, message = board.is_game_over()
+                        status, message = is_game_over(board)
                         if status != 'in_progress':
                             game_over = True
                             game_result_message = message
@@ -161,21 +183,25 @@ def main():
 
                             # Engine's turn
                             _, engine_move = engine.search_by_time(board, 3.0)
+                            # _, engine_move = engine.search_by_depth(board, 5)
                             if engine_move:
-                                captured_piece = board.make_move(engine_move)
+                                from_r, from_c = engine_move[0]
+                                to_r, to_c = engine_move[1]
+                                from_sq, to_sq = from_r * 9 + from_c, to_r * 9 + to_c
+                                captured_piece = board.move_piece(from_sq, to_sq)
                                 move_history.append((engine_move, captured_piece))
                                 last_move = engine_move
 
                                 # 检查游戏是否结束
-                                status, message = board.is_game_over()
+                                status, message = is_game_over(board)
                                 if status != 'in_progress':
                                     game_over = True
                                     game_result_message = message
                     else:
                         selected_piece_pos = None
                 else:
-                    piece = board.board[r][c]
-                    if piece != 0 and (piece > 0 and board.player == 1 or piece < 0 and board.player == -1):
+                    piece = board.get_piece_on_square(r * 9 + c)
+                    if piece != 0 and (piece > 0 and board.player_to_move == 1 or piece < 0 and board.player_to_move == -1):
                         selected_piece_pos = (r, c)
 
         draw_board()

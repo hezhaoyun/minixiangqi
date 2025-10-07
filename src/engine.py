@@ -6,19 +6,26 @@ import json
 import random
 from typing import Dict, Optional, Tuple
 
-from src.board import Board, Move, piece_to_zobrist_idx
+# --- New Bitboard Imports ---
+from src.bitboard import Bitboard, piece_to_zobrist_idx, PIECE_TO_BB_INDEX
 from src.evaluate import evaluate
-from src.moves_gen import generate_moves, generate_capture_moves, order_moves
+import src.moves_gen_bitboard as bb_moves
+
+# --- Old Board for API compatibility ---
+
+
 from src.constants import *
 
+# --- Type Hint for Move ---
+Move = tuple[tuple[int, int], tuple[int, int]]
+
 # 置换表条目的标志
-TT_EXACT = 0  # 精确值 (PV-Node)
-TT_LOWER = 1  # Alpha值 (Fail-High)
-TT_UPPER = 2  # Beta值 (Fail-Low)
+TT_EXACT = 0
+TT_LOWER = 1
+TT_UPPER = 2
 
 
 class StopSearchException(Exception):
-    '''自定义异常, 用于在时间用尽时中止搜索.'''
     pass
 
 
@@ -30,155 +37,110 @@ class Engine:
         self.time_limit = 0
         self.opening_book = None
         self.book_random = random.Random()
-        # 历史启发二维数组 [piece_idx][to_square_idx]
         self.history_table = [[0] * 90 for _ in range(14)]
         self._load_opening_book()
 
     def _clear_history_table(self):
-        '''清空历史表'''
         self.history_table = [[0] * 90 for _ in range(14)]
 
     def _load_opening_book(self):
-        '''加载开局库文件.'''
         try:
             with open('opening_book.json', 'r') as f:
                 book_str_keys = json.load(f)
-                # JSON keys are strings, convert them to int
                 self.opening_book = {int(k): [tuple(map(tuple, move)) for move in v] for k, v in book_str_keys.items()}
             print('开局库加载成功。')
         except FileNotFoundError:
             print('未找到开局库文件, 将不使用开局库。')
-            self.opening_book = None
-        except Exception as e:
-            print(f'加载开局库时发生错误: {e}')
-            self.opening_book = None
 
-    def query_opening_book(self, board: Board) -> Optional[Move]:
-        '''在开局库中查询当前局面.'''
+    def query_opening_book(self, bb: Bitboard) -> Optional[Move]:
         if not self.opening_book:
             return None
-
-        key = board.hash_key
-        if key in self.opening_book:
-            moves = self.opening_book[key]
-            # 验证走法是否合法
-            legal_moves = generate_moves(board)
-            valid_book_moves = [move for move in moves if move in legal_moves]
-            if valid_book_moves:
-                return self.book_random.choice(valid_book_moves)
+        if bb.hash_key in self.opening_book:
+            # TODO: Validate book moves against new move generator
+            return self.book_random.choice(self.opening_book[bb.hash_key])
         return None
 
     def _check_time(self):
-        '''每隔2048个节点检查一次时间, 如果超时则抛出异常.'''
-        if (self.nodes_searched & 2047) == 0:  # 高效的取模操作
+        if (self.nodes_searched & 2047) == 0:
             if self.time_limit > 0 and time.time() - self.start_time >= self.time_limit:
                 raise StopSearchException()
 
-    def _quiescence_search(self, board: Board, alpha: float, beta: float) -> Tuple[float, Optional[Move]]:
-        '''
-        静态搜索, 用于处理不稳定的局面 (主要指吃子), 以避免地平线效应.
-        '''
+    def _is_king_in_check(self, bb: Bitboard, player: int) -> bool:
+        """
+        检查指定玩家(player)的王是否被将军
+        """
+        player_king = R_KING if player == PLAYER_R else B_KING
+        king_sq_bb = bb.piece_bitboards[PIECE_TO_BB_INDEX[player_king]]
+        if not king_sq_bb:
+            return True  # 王不存在，视为被将
+
+        king_sq = (king_sq_bb & -king_sq_bb).bit_length() - 1
+        return bb_moves.is_square_attacked_by(bb, king_sq, -player)
+
+    def _negamax(self, bb: Bitboard, depth: int, alpha: float, beta: float) -> Tuple[float, Optional[Move]]:
         self.nodes_searched += 1
         self._check_time()
-
-        stand_pat_score = evaluate(board) * board.player
-
-        if stand_pat_score >= beta:
-            return stand_pat_score, None
-
-        alpha = max(alpha, stand_pat_score)
-
-        capture_moves = generate_capture_moves(board)
-        # 保持接口一致性, 传入历史表
-        ordered_moves = order_moves(board.board, capture_moves, None, self.history_table)
-
-        for move in ordered_moves:
-            captured_piece = board.make_move(move)
-            score, _ = self._quiescence_search(board, -beta, -alpha)
-            score = -score
-            board.unmake_move(move, captured_piece)
-
-            if score >= beta:
-                return score, None
-
-            if score > alpha:
-                alpha = score
-
-        return alpha, None
-
-    def _negamax(self, board: Board, depth: int, alpha: float, beta: float) -> Tuple[float, Optional[Move]]:
-        '''
-        使用 Negamax 算法结合 Alpha-Beta 剪枝和置换表来搜索. 
-        '''
-        self.nodes_searched += 1
-        self._check_time()
-
-        # 游戏结束判断
-        status, _ = board.is_game_over()
-        if status == 'checkmate':
-            return -MATE_VALUE, None
-        if status == 'stalemate':
-            return DRAW_VALUE, None
 
         original_alpha = alpha
-        tt_entry = self.tt.get(board.hash_key)
+        tt_entry = self.tt.get(bb.hash_key)
 
         if tt_entry and tt_entry['depth'] >= depth:
-            score = tt_entry['score']
-            flag = tt_entry['flag']
-            best_move = tt_entry.get('best_move')
-
+            score, flag, best_move = tt_entry['score'], tt_entry['flag'], tt_entry.get('best_move')
             if flag == TT_EXACT:
                 return score, best_move
             elif flag == TT_LOWER:
                 alpha = max(alpha, score)
             elif flag == TT_UPPER:
                 beta = min(beta, score)
-
             if alpha >= beta:
                 return score, best_move
 
         if depth == 0:
-            return self._quiescence_search(board, alpha, beta)
+            # Quiescence search would go here
+            return evaluate(bb) * bb.player_to_move, None
 
         best_value, best_move = -math.inf, None
-        best_move_from_tt = tt_entry.get('best_move') if tt_entry else None
 
-        moves = generate_moves(board)
-        ordered_moves = order_moves(board.board, moves, best_move_from_tt, self.history_table)
+        # Generate pseudo-legal moves
+        pseudo_moves = bb_moves.generate_all_moves(bb, bb.player_to_move)
 
-        if not ordered_moves:
-            return -math.inf, None
+        # TODO: Implement move ordering with history heuristic for bitboard moves
 
-        for move in ordered_moves:
-            captured_piece = board.make_move(move)
+        move_found = False
+        for move in pseudo_moves:
+            from_sq, to_sq = move[0][0] * 9 + move[0][1], move[1][0] * 9 + move[1][1]
 
-            if board.history.count(board.hash_key) > 1:
-                current_score = 0
-            else:
-                child_value, _ = self._negamax(board, depth - 1, -beta, -alpha)
-                current_score = -child_value
+            captured_piece = bb.move_piece(from_sq, to_sq)
 
-            board.unmake_move(move, captured_piece)
+            # Check for legality (king not in check after move)
+            if not self._is_king_in_check(bb, -bb.player_to_move):  # Check from opponent's perspective
+                move_found = True
+                if bb.history.count(bb.hash_key) > 1:
+                    current_score = 0
+                else:
+                    child_value, _ = self._negamax(bb, depth - 1, -beta, -alpha)
+                    current_score = -child_value
 
-            if current_score > best_value:
-                best_value = current_score
-                best_move = move
+                if current_score > best_value:
+                    best_value = current_score
+                    best_move = move
 
-            alpha = max(alpha, best_value)
+                alpha = max(alpha, best_value)
+
+            bb.unmove_piece(from_sq, to_sq, captured_piece)
 
             if alpha >= beta:
-                # Beta 剪枝: 这个走法太好了, 对手不会允许它发生
-                # 更新历史启发分数
-                if captured_piece == EMPTY: # 只对非吃子走法进行历史启发
-                    moving_piece = board.board[move[0][0]][move[0][1]]
+                if captured_piece == EMPTY:
+                    moving_piece = bb.get_piece_on_square(from_sq)
                     piece_idx = piece_to_zobrist_idx(moving_piece)
-                    to_sq_idx = move[1][0] * 9 + move[1][1]
-                    self.history_table[piece_idx][to_sq_idx] += depth * depth
+                    self.history_table[piece_idx][to_sq] += depth * depth
                 break
 
-        if best_value == -math.inf:
-            return -math.inf, None
+        if not move_found:
+            # No legal moves, check for checkmate or stalemate
+            if self._is_king_in_check(bb, bb.player_to_move):
+                return -MATE_VALUE, None  # Checkmate
+            return DRAW_VALUE, None  # Stalemate
 
         flag = TT_EXACT
         if best_value <= original_alpha:
@@ -186,70 +148,42 @@ class Engine:
         elif best_value >= beta:
             flag = TT_LOWER
 
-        self.tt[board.hash_key] = {
-            'depth': depth,
-            'score': best_value,
-            'flag': flag,
-            'best_move': best_move
-        }
-
+        self.tt[bb.hash_key] = {'depth': depth, 'score': best_value, 'flag': flag, 'best_move': best_move}
         return best_value, best_move
 
-    def search_by_depth(self, board: Board, depth: int) -> Tuple[float, Optional[Move]]:
-        '''
-        执行迭代深化搜索.
-        从深度1开始, 迭代搜索到指定的深度.
-        这样可以更好地利用置换表, 并允许未来的时间控制.
-        '''
-        book_move = self.query_opening_book(board)
+    def search_by_time(self, bb: Bitboard, time_limit_seconds: float) -> Tuple[float, Optional[Move]]:
+        board_copy = bb.copy()
+        book_move = self.query_opening_book(board_copy)
         if book_move:
-            print(f'Opening book move: {book_move}')
             return 0, book_move
 
-        board_copy = board.copy()
-        self.tt.clear()
-        self._clear_history_table()
-        best_move = None
-        final_score = -math.inf
-
-        for i in range(1, depth + 1):
-            score, move = self._negamax(board_copy, i, -math.inf, math.inf)
-
-            if move:
-                best_move = move
-            final_score = score
-
-        return final_score, best_move
-
-    def search_by_time(self, board: Board, time_limit_seconds: float) -> Tuple[float, Optional[Move]]:
-        '''
-        执行基于时间限制的迭代深化搜索.
-        '''
-        book_move = self.query_opening_book(board)
-        if book_move:
-            print(f'Opening book move: {book_move}')
-            return 0, book_move
-
-        board_copy = board.copy()
         self.tt.clear()
         self._clear_history_table()
         self.start_time = time.time()
         self.time_limit = time_limit_seconds
         self.nodes_searched = 0
-
-        last_completed_score = -math.inf
         last_completed_move = None
 
         try:
             for i in range(1, 64):
-                current_score, current_move = self._negamax(board_copy, i, -math.inf, math.inf)
-
-                last_completed_score = current_score
-                last_completed_move = current_move
-
-                if abs(current_score) > (10000 / 2):
+                score, move = self._negamax(board_copy, i, -math.inf, math.inf)
+                if move:
+                    last_completed_move = move
+                if abs(score) > (MATE_VALUE / 2):
                     break
         except StopSearchException:
             pass
+        return 0, last_completed_move
 
-        return last_completed_score, last_completed_move
+    def search_by_depth(self, bb: Bitboard, depth: int) -> Tuple[float, Optional[Move]]:
+        board_copy = bb.copy()
+        book_move = self.query_opening_book(board_copy)
+        if book_move:
+            return 0, book_move
+
+        self.tt.clear()
+        self._clear_history_table()
+        score, move = -math.inf, None
+        for i in range(1, depth + 1):
+            score, move = self._negamax(board_copy, i, -math.inf, math.inf)
+        return score, move
