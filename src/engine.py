@@ -9,7 +9,7 @@ from typing import Dict, Optional, Tuple
 # --- New Bitboard Imports ---
 from src.bitboard import Bitboard, PIECE_TO_BB_INDEX
 from src.evaluate import evaluate
-import src.moves_gen_bitboard as bb_moves
+import src.moves as moves
 
 # --- Old Board for API compatibility ---
 
@@ -93,12 +93,12 @@ class Engine:
             return sq // 9, sq % 9
 
         # Generate legal moves
-        legal_moves = bb_moves.generate_moves(bb)
+        legal_moves = moves.generate_moves(bb)
 
         # TODO: Implement move ordering with history heuristic for bitboard moves
 
         if not legal_moves:
-            if bb_moves.is_check(bb, bb.player_to_move):
+            if moves.is_check(bb, bb.player_to_move):
                 return -MATE_VALUE, None  # Checkmate
             return DRAW_VALUE, None  # Stalemate
 

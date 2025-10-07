@@ -4,7 +4,7 @@ import sys
 import os
 from src.bitboard import Bitboard as Board
 from src.engine import Engine
-from src.moves_gen_bitboard import generate_moves, is_check
+from src.moves import generate_moves, is_check
 from src.constants import PLAYER_B
 import pygame.gfxdraw
 

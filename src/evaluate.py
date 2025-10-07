@@ -8,7 +8,7 @@ from typing import List, Tuple
 
 from src.bitboard import Bitboard, PIECE_TO_BB_INDEX, BB_INDEX_TO_PIECE
 from src.constants import *
-from src.moves_gen_bitboard import get_rook_moves_bb, get_cannon_moves_bb, HORSE_ATTACKS, HORSE_LEGS, SQUARE_MASKS
+from src.moves import get_rook_moves_bb, get_cannon_moves_bb, HORSE_ATTACKS, HORSE_LEGS, SQUARE_MASKS
 
 # --- Midgame Piece-Square Tables (PST_MG) ---
 # fmt: off
