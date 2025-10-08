@@ -85,7 +85,8 @@ class Bitboard:
         # 将初始局面的哈希值存入历史记录
         self.history.append(self.hash_key)
 
-    def get_player_bb_idx(self, player: int) -> int:
+    @staticmethod
+    def get_player_bb_idx(player: int) -> int:
         """获取玩家在 `color_bitboards` 数组中的索引 (0 for Red, 1 for Black)。"""
         return 0 if player == PLAYER_R else 1
 
@@ -138,7 +139,7 @@ class Bitboard:
         # 更新棋子位棋盘
         self.piece_bitboards[PIECE_TO_BB_INDEX[piece_type]] |= mask
         # 更新颜色位棋盘
-        self.color_bitboards[self.get_player_bb_idx(player)] |= mask
+        self.color_bitboards[Bitboard.get_player_bb_idx(player)] |= mask
         # 更新Zobrist哈希
         self.hash_key ^= zobrist_keys[Bitboard.piece_to_zobrist_idx(piece_type)][r][c]
 
@@ -178,7 +179,7 @@ class Bitboard:
         # 异或一个包含起始和目标位置的掩码，相当于将棋子从from_sq移动到to_sq
         move_mask = SQUARE_MASKS[from_sq] | SQUARE_MASKS[to_sq]
         self.piece_bitboards[PIECE_TO_BB_INDEX[moving_piece]] ^= move_mask
-        self.color_bitboards[self.get_player_bb_idx(self.player_to_move)] ^= move_mask
+        self.color_bitboards[Bitboard.get_player_bb_idx(self.player_to_move)] ^= move_mask
 
         # 4. 如果有吃子，处理被吃掉的棋子
         if captured_piece != EMPTY:
@@ -188,7 +189,7 @@ class Bitboard:
             # 从位棋盘中移除被吃掉的棋子
             capture_mask = CLEAR_MASKS[to_sq]
             self.piece_bitboards[PIECE_TO_BB_INDEX[captured_piece]] &= capture_mask
-            self.color_bitboards[self.get_player_bb_idx(Bitboard.get_player(captured_piece))] &= capture_mask
+            self.color_bitboards[Bitboard.get_player_bb_idx(Bitboard.get_player(captured_piece))] &= capture_mask
 
         # 5. 切换走棋方并更新哈希
         self.player_to_move *= -1
@@ -205,7 +206,7 @@ class Bitboard:
         撤销的顺序与执行走法的顺序严格相反。
         """
         self.history.pop()
-        moving_piece = self.board[to_sq] # 使用邮箱快速查找
+        moving_piece = self.board[to_sq]  # 使用邮箱快速查找
         r_from, c_from = from_sq // 9, from_sq % 9
         r_to, c_to = to_sq // 9, to_sq % 9
 
@@ -220,7 +221,7 @@ class Bitboard:
         # 3. 将移动的棋子从 to_sq 移回 from_sq
         move_mask = SQUARE_MASKS[from_sq] | SQUARE_MASKS[to_sq]
         self.piece_bitboards[PIECE_TO_BB_INDEX[moving_piece]] ^= move_mask
-        self.color_bitboards[self.get_player_bb_idx(self.player_to_move)] ^= move_mask
+        self.color_bitboards[Bitboard.get_player_bb_idx(self.player_to_move)] ^= move_mask
         # 恢复Zobrist哈希
         moving_z_idx = Bitboard.piece_to_zobrist_idx(moving_piece)
         self.hash_key ^= zobrist_keys[moving_z_idx][r_from][c_from]
@@ -231,7 +232,7 @@ class Bitboard:
             capture_mask = SQUARE_MASKS[to_sq]
             captured_player = Bitboard.get_player(captured_piece)
             self.piece_bitboards[PIECE_TO_BB_INDEX[captured_piece]] |= capture_mask
-            self.color_bitboards[self.get_player_bb_idx(captured_player)] |= capture_mask
+            self.color_bitboards[Bitboard.get_player_bb_idx(captured_player)] |= capture_mask
             # 恢复被吃棋子的Zobrist哈希
             captured_z_idx = Bitboard.piece_to_zobrist_idx(captured_piece)
             self.hash_key ^= zobrist_keys[captured_z_idx][r_to][c_to]

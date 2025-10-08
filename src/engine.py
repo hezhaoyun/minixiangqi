@@ -123,7 +123,7 @@ class Engine:
         # 只生成并搜索吃子走法
         all_legal_moves = moves.generate_moves(bb)
         capture_moves = []
-        opponent_idx = 1 - bb.get_player_bb_idx(bb.player_to_move)
+        opponent_idx = 1 - Bitboard.get_player_bb_idx(bb.player_to_move)
         opponent_pieces_bb = bb.color_bitboards[opponent_idx]
         for from_sq, to_sq in all_legal_moves:
             if (opponent_pieces_bb >> to_sq) & 1:
@@ -200,7 +200,7 @@ class Engine:
         # R是裁剪的深度，自适应调整，深度越深，裁剪得越狠。
         R = 3 + depth // 6
         major_pieces_count = 0
-        player_idx = bb.get_player_bb_idx(bb.player_to_move)
+        player_idx = Bitboard.get_player_bb_idx(bb.player_to_move)
         if player_idx == 0:  # Red
             major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[R_ROOK]]).count('1')
             major_pieces_count += bin(bb.piece_bitboards[PIECE_TO_BB_INDEX[R_HORSE]]).count('1')
