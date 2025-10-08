@@ -20,7 +20,7 @@ Move = tuple[int, int]  # 使用整数表示棋盘位置，而非坐标元组
 
 # --- 棋盘区域掩码 (Masks) ---
 # 用于兵、象等棋子过河或区域限制
-RED_SIDE_MASK = 0x1FFFFFFFFFFF  # 红方兵、象的移动区域 (黑方半盘)
+RED_SIDE_MASK = 0x000000000001FFFFFFFFFFF  # 红方兵、象的移动区域 (黑方半盘)
 BLACK_SIDE_MASK = 0x3FFFFFFFFFFE00000000000  # 黑方兵、象的移动区域 (红方半盘)
 
 # --- 预计算攻击表 (Pre-calculated Attack Tables) ---
@@ -74,6 +74,7 @@ def _precompute_bishop_horse_attacks():
             from_sq = _sq(r, c)
             BISHOP_LEGS[from_sq] = {}
             HORSE_LEGS[from_sq] = {}
+
             # 象/相的走法 ("田"字)
             for dr, dc in [(2, 2), (2, -2), (-2, 2), (-2, -2)]:
                 nr, nc = r + dr, c + dc
@@ -84,6 +85,7 @@ def _precompute_bishop_horse_attacks():
                 # 记录象眼位置
                 leg_r, leg_c = r + dr // 2, c + dc // 2
                 BISHOP_LEGS[from_sq][to_sq] = _sq(leg_r, leg_c)
+
             # 马的走法 ("日"字)
             for dr, dc in [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2)]:
                 nr, nc = r + dr, c + dc
@@ -105,17 +107,21 @@ def _precompute_pawn_attacks():
     for r in range(10):
         for c in range(9):
             sq = _sq(r, c)
+
             # 红兵走法
             if _is_valid(r - 1, c):
                 PAWN_ATTACKS[0][sq] |= SQUARE_MASKS[_sq(r - 1, c)]  # 向前
+
             if r < 5:  # 过河后
                 if _is_valid(r, c - 1):
                     PAWN_ATTACKS[0][sq] |= SQUARE_MASKS[_sq(r, c - 1)]  # 向左
                 if _is_valid(r, c + 1):
                     PAWN_ATTACKS[0][sq] |= SQUARE_MASKS[_sq(r, c + 1)]  # 向右
+
             # 黑卒走法
             if _is_valid(r + 1, c):
                 PAWN_ATTACKS[1][sq] |= SQUARE_MASKS[_sq(r + 1, c)]  # 向前
+
             if r > 4:  # 过河后
                 if _is_valid(r, c - 1):
                     PAWN_ATTACKS[1][sq] |= SQUARE_MASKS[_sq(r, c - 1)]  # 向左
@@ -172,6 +178,7 @@ def get_rook_moves_bb(sq: int, occupied: int) -> int:
     attacks = 0
     for direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
         attacks |= _get_slider_moves_in_direction(sq, occupied, False, direction)
+
     return attacks
 
 
@@ -182,6 +189,7 @@ def get_cannon_moves_bb(sq: int, occupied: int) -> int:
     attacks = 0
     for direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
         attacks |= _get_slider_moves_in_direction(sq, occupied, True, direction)
+
     return attacks
 
 
@@ -258,6 +266,7 @@ def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
                 temp_valid_moves &= temp_valid_moves - 1
 
             temp_piece_bb &= temp_piece_bb - 1
+
     return moves
 
 

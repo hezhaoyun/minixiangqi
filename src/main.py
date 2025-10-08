@@ -120,6 +120,7 @@ def is_game_over(board):
         else:
             # 逼和
             return '和棋'
+
     return None
 
 

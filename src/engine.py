@@ -46,7 +46,7 @@ class Engine:
     象棋AI引擎类。
 
     Attributes:
-        tt (Dict): 置换表，用于缓存已计算过的局面的评估值和最佳走法。
+        transposition_table (Dict): 置换表，用于缓存已计算过的局面的评估值和最佳走法。
         nodes_searched (int): 当前搜索访问的节点总数。
         start_time (float): 搜索开始的时间戳。
         time_limit (float): 单次搜索的时间限制（秒）。
@@ -56,7 +56,7 @@ class Engine:
 
     def __init__(self):
         """初始化引擎。"""
-        self.tt: Dict = {}
+        self.transposition_table: Dict = {}
         self.nodes_searched = 0
         self.start_time = 0
         self.time_limit = 0
@@ -91,8 +91,10 @@ class Engine:
         """
         if not self.opening_book:
             return None
+
         if bb.hash_key in self.opening_book:
             return self.book_random.choice(self.opening_book[bb.hash_key])
+
         return None
 
     def _quiescence_search(self, bb: Bitboard, alpha: float, beta: float) -> float:
@@ -175,11 +177,10 @@ class Engine:
         # --- 置换表查询 ---
         # 尝试从置换表中获取当前局面的缓存信息，如果缓存的深度足够，则可以直接使用。
         original_alpha = alpha
-        tt_entry = self.tt.get(bb.hash_key)
+        tt_entry = self.transposition_table.get(bb.hash_key)
 
         if tt_entry and tt_entry['depth'] >= depth:
-            score, flag, best_move = tt_entry['score'], tt_entry['flag'], tt_entry.get(
-                'best_move')
+            score, flag, best_move = tt_entry['score'], tt_entry['flag'], tt_entry.get('best_move')
             if flag == TT_EXACT:
                 return score, best_move
             elif flag == TT_LOWER:
@@ -220,7 +221,7 @@ class Engine:
             bb.player_to_move *= -1
             bb.hash_key ^= zobrist_player
             if null_move_score >= beta:
-                self.tt[bb.hash_key] = {'depth': depth, 'score': beta, 'flag': TT_LOWER, 'best_move': None}
+                self.transposition_table[bb.hash_key] = {'depth': depth, 'score': beta, 'flag': TT_LOWER, 'best_move': None}
                 return beta, None
 
         best_value = -math.inf
@@ -314,7 +315,10 @@ class Engine:
         elif best_value >= beta:
             flag = TT_LOWER
 
-        self.tt[bb.hash_key] = {'depth': depth, 'score': best_value, 'flag': flag, 'best_move': best_move}
+        self.transposition_table[bb.hash_key] = {
+            'depth': depth, 'score': best_value, 'flag': flag, 'best_move': best_move,
+        }
+
         return best_value, best_move
 
     def search_by_time(self, bb: Bitboard, time_limit_seconds: float) -> Tuple[float, Optional[Move]]:
@@ -336,7 +340,7 @@ class Engine:
         if book_move:
             return 0, book_move
 
-        self.tt.clear()
+        self.transposition_table.clear()
         self._clear_history_table()
         self.start_time = time.time()
         self.time_limit = time_limit_seconds
@@ -358,7 +362,9 @@ class Engine:
 
         end_time = time.time()
         time_taken = end_time - self.start_time
+
         print(f"Score: {score}, depth: {i}, time: {time_taken:.2f}, nodes: {self.nodes_searched}")
+
         return 0, last_completed_move
 
     def search_by_depth(self, bb: Bitboard, depth: int) -> Tuple[float, Optional[Move]]:
@@ -379,7 +385,7 @@ class Engine:
         if book_move:
             return 0, book_move
 
-        self.tt.clear()
+        self.transposition_table.clear()
         self._clear_history_table()
         score, move = -math.inf, None
         last_good_move = None
@@ -389,4 +395,5 @@ class Engine:
                 last_good_move = move
             if abs(score) > (MATE_VALUE - 100):  # Stop if a mate is found
                 break
+
         return score, last_good_move
