@@ -135,61 +135,133 @@ _precompute_bishop_horse_attacks()
 _precompute_pawn_attacks()
 
 
-def _get_slider_moves_in_direction(sq: int, occupied: int, is_cannon: bool, direction: tuple[int, int]) -> int:
-    """
-    在单个方向上为滑动棋子（车或炮）生成走法。
-    这是一个内部辅助函数。
-    """
-    r, c = sq // 9, sq % 9
-    dr, dc = direction
-    attacks = 0
-    screen = False  # 仅用于炮的走法生成，标记是否已遇到第一个棋子（炮架）
+# --- Ray-Attack Pre-calculation for Sliding Pieces ---
 
-    nr, nc = r + dr, c + dc
-    while _is_valid(nr, nc):
-        s = _sq(nr, nc)
-        is_occupied = occupied & SQUARE_MASKS[s]
+# Directions: 0:N, 1:E, 2:S, 3:W
+RAYS = [[0] * 90, [0] * 90, [0] * 90, [0] * 90]
 
-        if not is_cannon:  # 车的逻辑
-            attacks |= SQUARE_MASKS[s]  # 可以移动到空位或吃掉第一个遇到的子
-            if is_occupied:
-                break  # 遇到子后停止
-        else:  # 炮的逻辑
-            if not screen:
-                if not is_occupied:
-                    attacks |= SQUARE_MASKS[s]  # 炮架前，只能移动到空位
-                else:
-                    screen = True  # 遇到第一个子，成为炮架
-            else:
-                if is_occupied:
-                    attacks |= SQUARE_MASKS[s]  # 遇到炮架后的第二个子，可以吃掉
-                    break  # 吃子后停止
+def _precompute_rays():
+    """预计算所有位置在四个基本方向上的射线。"""
+    for sq in range(90):
+        r, c = sq // 9, sq % 9
+        # North (Up)
+        for i in range(r - 1, -1, -1):
+            RAYS[0][sq] |= SQUARE_MASKS[_sq(i, c)]
+        # East (Right)
+        for i in range(c + 1, 9):
+            RAYS[1][sq] |= SQUARE_MASKS[_sq(r, i)]
+        # South (Down)
+        for i in range(r + 1, 10):
+            RAYS[2][sq] |= SQUARE_MASKS[_sq(i, c)]
+        # West (Left)
+        for i in range(c - 1, -1, -1):
+            RAYS[3][sq] |= SQUARE_MASKS[_sq(r, i)]
 
-        nr += dr
-        nc += dc
-
-    return attacks
-
+_precompute_rays()
 
 def get_rook_moves_bb(sq: int, occupied: int) -> int:
     """
-    获取车在给定位置的走法位棋盘。
+    获取车在给定位置的走法位棋盘 (使用射线预计算)。
     """
-    attacks = 0
-    for direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-        attacks |= _get_slider_moves_in_direction(sq, occupied, False, direction)
+    final_attacks = 0
+    
+    # North (decreasing index) -> MSB
+    ray = RAYS[0][sq]
+    blockers = occupied & ray
+    if blockers:
+        first_blocker = blockers.bit_length() - 1
+        final_attacks |= (ray ^ RAYS[0][first_blocker]) | SQUARE_MASKS[first_blocker]
+    else:
+        final_attacks |= ray
 
-    return attacks
+    # East (increasing index) -> LSB
+    ray = RAYS[1][sq]
+    blockers = occupied & ray
+    if blockers:
+        first_blocker = (blockers & -blockers).bit_length() - 1
+        final_attacks |= (ray ^ RAYS[1][first_blocker]) | SQUARE_MASKS[first_blocker]
+    else:
+        final_attacks |= ray
+
+    # South (increasing index) -> LSB
+    ray = RAYS[2][sq]
+    blockers = occupied & ray
+    if blockers:
+        first_blocker = (blockers & -blockers).bit_length() - 1
+        final_attacks |= (ray ^ RAYS[2][first_blocker]) | SQUARE_MASKS[first_blocker]
+    else:
+        final_attacks |= ray
+
+    # West (decreasing index) -> MSB
+    ray = RAYS[3][sq]
+    blockers = occupied & ray
+    if blockers:
+        first_blocker = blockers.bit_length() - 1
+        final_attacks |= (ray ^ RAYS[3][first_blocker]) | SQUARE_MASKS[first_blocker]
+    else:
+        final_attacks |= ray
+        
+    return final_attacks
 
 
 def get_cannon_moves_bb(sq: int, occupied: int) -> int:
     """
-    获取炮在给定位置的走法位棋盘。
+    获取炮在给定位置的走法位棋盘 (使用射线预计算)。
     """
     attacks = 0
-    for direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-        attacks |= _get_slider_moves_in_direction(sq, occupied, True, direction)
+    
+    # North (decreasing index) -> MSB
+    ray = RAYS[0][sq]
+    blockers = occupied & ray
+    if blockers:
+        screen = blockers.bit_length() - 1
+        attacks |= ray ^ RAYS[0][screen] ^ SQUARE_MASKS[screen] # Empty squares before screen
+        remaining_blockers = blockers ^ SQUARE_MASKS[screen]
+        if remaining_blockers:
+            target = remaining_blockers.bit_length() - 1
+            attacks |= SQUARE_MASKS[target]
+    else:
+        attacks |= ray
 
+    # East (increasing index) -> LSB
+    ray = RAYS[1][sq]
+    blockers = occupied & ray
+    if blockers:
+        screen = (blockers & -blockers).bit_length() - 1
+        attacks |= ray ^ RAYS[1][screen] ^ SQUARE_MASKS[screen]
+        remaining_blockers = blockers ^ SQUARE_MASKS[screen]
+        if remaining_blockers:
+            target = (remaining_blockers & -remaining_blockers).bit_length() - 1
+            attacks |= SQUARE_MASKS[target]
+    else:
+        attacks |= ray
+
+    # South (increasing index) -> LSB
+    ray = RAYS[2][sq]
+    blockers = occupied & ray
+    if blockers:
+        screen = (blockers & -blockers).bit_length() - 1
+        attacks |= ray ^ RAYS[2][screen] ^ SQUARE_MASKS[screen]
+        remaining_blockers = blockers ^ SQUARE_MASKS[screen]
+        if remaining_blockers:
+            target = (remaining_blockers & -remaining_blockers).bit_length() - 1
+            attacks |= SQUARE_MASKS[target]
+    else:
+        attacks |= ray
+
+    # West (decreasing index) -> MSB
+    ray = RAYS[3][sq]
+    blockers = occupied & ray
+    if blockers:
+        screen = blockers.bit_length() - 1
+        attacks |= ray ^ RAYS[3][screen] ^ SQUARE_MASKS[screen]
+        remaining_blockers = blockers ^ SQUARE_MASKS[screen]
+        if remaining_blockers:
+            target = remaining_blockers.bit_length() - 1
+            attacks |= SQUARE_MASKS[target]
+    else:
+        attacks |= ray
+        
     return attacks
 
 

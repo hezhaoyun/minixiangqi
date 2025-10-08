@@ -199,7 +199,7 @@ class Engine:
         # 假设当前方放弃一步棋，如果局面评估值仍然很高（>= beta），
         # 那么可以认为当前局面本身就很好，可以提前剪枝。
         # R是裁剪的深度，自适应调整，深度越深，裁剪得越狠。
-        R = 3 + depth // 6
+        R = 2 + depth // 6
         major_pieces_count = 0
         player_idx = Bitboard.get_player_bb_idx(bb.player_to_move)
         if player_idx == 0:  # Red

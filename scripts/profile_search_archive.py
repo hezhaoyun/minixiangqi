@@ -28,12 +28,15 @@ def profile_search():
     print("Opening book disabled for profiling.")
 
     # 从标准开局局面开始
-    fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"
+    # fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"
+    fen = "rnbakCb1r/9/7c1/p1p1p1p1p/9/9/P1P1P1P1P/1C7/9/RcBAKABNR b - - 0 1"
     board = Bitboard(fen=fen)
 
-    print("Starting search to depth 5...")
-    engine.search_by_depth(board, 5)
-    print("Search finished.")
+    # print("Starting search to depth 5...")
+    # score, move = engine.search_by_depth(board, 5)
+    print("Starting search time limit 3s...")
+    score, move = engine.search_by_time(board, 3.0)
+    print(f"Search finished. Score: {score}, Move: {move}")
 
 
 if __name__ == "__main__":
