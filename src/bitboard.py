@@ -75,6 +75,7 @@ class Bitboard:
         self.player_to_move = PLAYER_R
         self.hash_key = 0
         self.history = []
+        self.board = [EMPTY] * 90
 
         if fen:
             self.parse_fen(fen)
@@ -99,6 +100,7 @@ class Bitboard:
         self.piece_bitboards = [0] * 14
         self.color_bitboards = [0] * 2
         self.hash_key = 0
+        self.board = [EMPTY] * 90
 
         # 根据FEN字符串设置棋子
         for r, row_str in enumerate(fen_board.split('/')):
@@ -131,6 +133,8 @@ class Bitboard:
         player = Bitboard.get_player(piece_type)
         r, c = sq // 9, sq % 9
 
+        # 更新棋盘数组
+        self.board[sq] = piece_type
         # 更新棋子位棋盘
         self.piece_bitboards[PIECE_TO_BB_INDEX[piece_type]] |= mask
         # 更新颜色位棋盘
@@ -152,27 +156,31 @@ class Bitboard:
         Returns:
             int: 被吃掉的棋子类型，如果没有吃子则返回EMPTY。
         """
-        moving_piece = self.get_piece_on_square(from_sq)
+        moving_piece = self.board[from_sq]
         if moving_piece == EMPTY:
             return EMPTY
 
-        captured_piece = self.get_piece_on_square(to_sq)
+        captured_piece = self.board[to_sq]
         r_from, c_from = from_sq // 9, from_sq % 9
         r_to, c_to = to_sq // 9, to_sq % 9
 
-        # 1. 更新移动棋子的Zobrist哈希
+        # 1. 更新棋盘数组
+        self.board[from_sq] = EMPTY
+        self.board[to_sq] = moving_piece
+
+        # 2. 更新移动棋子的Zobrist哈希
         # 异或操作相当于：从哈希中移除起始位置的棋子，再在目标位置添加该棋子
         moving_z_idx = Bitboard.piece_to_zobrist_idx(moving_piece)
         self.hash_key ^= zobrist_keys[moving_z_idx][r_from][c_from]
         self.hash_key ^= zobrist_keys[moving_z_idx][r_to][c_to]
 
-        # 2. 更新移动棋子的位棋盘
+        # 3. 更新移动棋子的位棋盘
         # 异或一个包含起始和目标位置的掩码，相当于将棋子从from_sq移动到to_sq
         move_mask = SQUARE_MASKS[from_sq] | SQUARE_MASKS[to_sq]
         self.piece_bitboards[PIECE_TO_BB_INDEX[moving_piece]] ^= move_mask
         self.color_bitboards[self.get_player_bb_idx(self.player_to_move)] ^= move_mask
 
-        # 3. 如果有吃子，处理被吃掉的棋子
+        # 4. 如果有吃子，处理被吃掉的棋子
         if captured_piece != EMPTY:
             # 从哈希中移除被吃掉的棋子
             captured_z_idx = Bitboard.piece_to_zobrist_idx(captured_piece)
@@ -182,7 +190,7 @@ class Bitboard:
             self.piece_bitboards[PIECE_TO_BB_INDEX[captured_piece]] &= capture_mask
             self.color_bitboards[self.get_player_bb_idx(Bitboard.get_player(captured_piece))] &= capture_mask
 
-        # 4. 切换走棋方并更新哈希
+        # 5. 切换走棋方并更新哈希
         self.player_to_move *= -1
         self.hash_key ^= zobrist_player
         self.history.append(self.hash_key)
@@ -197,7 +205,7 @@ class Bitboard:
         撤销的顺序与执行走法的顺序严格相反。
         """
         self.history.pop()
-        moving_piece = self.get_piece_on_square(to_sq)
+        moving_piece = self.board[to_sq] # 使用邮箱快速查找
         r_from, c_from = from_sq // 9, from_sq % 9
         r_to, c_to = to_sq // 9, to_sq % 9
 
@@ -205,7 +213,11 @@ class Bitboard:
         self.player_to_move *= -1
         self.hash_key ^= zobrist_player
 
-        # 2. 将移动的棋子从 to_sq 移回 from_sq
+        # 2. 恢复棋盘数组
+        self.board[from_sq] = moving_piece
+        self.board[to_sq] = captured_piece
+
+        # 3. 将移动的棋子从 to_sq 移回 from_sq
         move_mask = SQUARE_MASKS[from_sq] | SQUARE_MASKS[to_sq]
         self.piece_bitboards[PIECE_TO_BB_INDEX[moving_piece]] ^= move_mask
         self.color_bitboards[self.get_player_bb_idx(self.player_to_move)] ^= move_mask
@@ -214,7 +226,7 @@ class Bitboard:
         self.hash_key ^= zobrist_keys[moving_z_idx][r_from][c_from]
         self.hash_key ^= zobrist_keys[moving_z_idx][r_to][c_to]
 
-        # 3. 如果有吃子，将被吃的棋子放回 to_sq
+        # 4. 如果有吃子，将被吃的棋子放回 to_sq
         if captured_piece != EMPTY:
             capture_mask = SQUARE_MASKS[to_sq]
             captured_player = Bitboard.get_player(captured_piece)
@@ -226,17 +238,7 @@ class Bitboard:
 
     def get_piece_on_square(self, sq: int) -> int:
         """获取指定位置上的棋子。"""
-        mask = SQUARE_MASKS[sq]
-
-        # 优化：先确定颜色，缩小搜索范围
-        is_red = self.color_bitboards[0] & mask
-        player_bb_indices = range(7) if is_red else range(7, 14)
-
-        for i in player_bb_indices:
-            if self.piece_bitboards[i] & mask:
-                return BB_INDEX_TO_PIECE[i]
-
-        return EMPTY
+        return self.board[sq]
 
     @property
     def occupied_bitboard(self) -> int:

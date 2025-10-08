@@ -316,33 +316,14 @@ def is_square_attacked_by(bb: Bitboard, sq: int, attacker_player: int) -> bool:
     if king_attacks & bb.piece_bitboards[PIECE_TO_BB_INDEX[king_piece]]:
         return True
 
-    # 检查车和炮的攻击 (射线法)
+    # 检查车和炮的攻击 (复用走法生成函数以提高性能)
     rook_piece = R_ROOK if attacker_player == PLAYER_R else B_ROOK
-    cannon_piece = R_CANNON if attacker_player == PLAYER_R else B_CANNON
-    r, c = sq // 9, sq % 9
+    if get_rook_moves_bb(sq, occupied) & bb.piece_bitboards[PIECE_TO_BB_INDEX[rook_piece]]:
+        return True
 
-    for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]:  # 四个直线方向
-        screen = False  # 标记是否遇到炮架
-        nr, nc = r + dr, c + dc
-        while _is_valid(nr, nc):
-            s = _sq(nr, nc)
-            if occupied & SQUARE_MASKS[s]:  # 如果当前位置有棋子
-                if not screen:
-                    # 这是射线方向上遇到的第一个棋子
-                    # 检查它是否是对方的车 (或者是将帅对脸)
-                    if bb.piece_bitboards[PIECE_TO_BB_INDEX[rook_piece]] & SQUARE_MASKS[s]:
-                        return True
-                    # 如果不是车，它就成为炮的炮架
-                    screen = True
-                else:
-                    # 这是射线方向上遇到的第二个棋子
-                    # 检查它是否是对方的炮
-                    if bb.piece_bitboards[PIECE_TO_BB_INDEX[cannon_piece]] & SQUARE_MASKS[s]:
-                        return True
-                    # 无论是什么棋子，射线都被阻挡，停止这个方向的搜索
-                    break
-            nr += dr
-            nc += dc
+    cannon_piece = R_CANNON if attacker_player == PLAYER_R else B_CANNON
+    if get_cannon_moves_bb(sq, occupied) & bb.piece_bitboards[PIECE_TO_BB_INDEX[cannon_piece]]:
+        return True
 
     return False
 
@@ -364,8 +345,37 @@ def is_check(bb: Bitboard, player: int) -> bool:
         return True  # 棋盘上没有将/帅，理论上不应发生
     king_sq = (king_sq_bb & -king_sq_bb).bit_length() - 1
 
-    # 检查对方是否能攻击到己方的将/帅
-    return is_square_attacked_by(bb, king_sq, -player)
+    # 1. 检查是否被对方棋子攻击
+    if is_square_attacked_by(bb, king_sq, -player):
+        return True
+
+    # 2. 检查是否满足“将帅对脸”的条件
+    opponent_player = -player
+    opponent_king_piece = R_KING if opponent_player == PLAYER_R else B_KING
+    opponent_king_sq_bb = bb.piece_bitboards[PIECE_TO_BB_INDEX[opponent_king_piece]]
+    if not opponent_king_sq_bb:
+        return False  # 没有对方将/帅，则安全
+
+    opponent_king_sq = (opponent_king_sq_bb & -opponent_king_sq_bb).bit_length() - 1
+
+    # a. 必须在同一列
+    if king_sq % 9 != opponent_king_sq % 9:
+        return False
+
+    # b. 两者之间不能有任何棋子
+    occupied = bb.occupied_bitboard
+    min_sq, max_sq = min(king_sq, opponent_king_sq), max(king_sq, opponent_king_sq)
+    
+    # 构造两者之间所有格子的掩码
+    between_mask = 0
+    # 从min_sq的下一行开始，到max_sq之前
+    for s in range(min_sq + 9, max_sq, 9):
+        between_mask |= SQUARE_MASKS[s]
+
+    if not (occupied & between_mask):
+        return True  # 将帅对脸，构成将军
+
+    return False
 
 
 def generate_moves(bb: Bitboard) -> List[Move]:
