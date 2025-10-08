@@ -355,6 +355,10 @@ class Engine:
                     break
         except StopSearchException:
             pass
+
+        end_time = time.time()
+        time_taken = end_time - self.start_time
+        print(f"Score: {score}, depth: {i}, time: {time_taken:.2f}, nodes: {self.nodes_searched}")
         return 0, last_completed_move
 
     def search_by_depth(self, bb: Bitboard, depth: int) -> Tuple[float, Optional[Move]]:

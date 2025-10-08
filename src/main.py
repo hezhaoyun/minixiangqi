@@ -111,6 +111,7 @@ def is_game_over(board):
     Returns:
         str: 如果游戏结束，返回结果信息 (如 '红方胜')；否则返回 None。
     """
+
     # 如果当前方没有合法走法
     if len(generate_moves(board)) == 0:
         if is_check(board, board.player_to_move):
@@ -135,7 +136,7 @@ def main():
             # --- 键盘事件处理 ---
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_t:  # T键: 加载测试FEN局面
-                    board = Board('3aka2r/4n4/9/p5p1p/c1R1p4/4P1P2/P7P/N1CnB4/4C4/2BAKA3 w - - 0 1')
+                    board = Board('4kabn1/3Pa4/2c1b4/2c5p/p3CN3/9/9/9/3K5/9 w - - 0 1')
                     selected_piece_pos = None
                     last_move = None
                     move_history = []
@@ -214,6 +215,7 @@ def main():
                             # 调用引擎进行搜索
                             _, engine_move = engine.search_by_time(board, 3.0)
                             if engine_move:
+                                print('Board FEN:', board.to_fen())
                                 from_r, from_c = engine_move[0]
                                 to_r, to_c = engine_move[1]
                                 from_sq, to_sq = from_r * 9 + from_c, to_r * 9 + to_c

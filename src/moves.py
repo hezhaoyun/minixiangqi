@@ -277,7 +277,7 @@ def is_square_attacked_by(bb: Bitboard, sq: int, attacker_player: int) -> bool:
     attacker_idx = 0 if attacker_player == PLAYER_R else 1
 
     # 检查兵/卒的攻击
-    pawn_attacks = PAWN_ATTACKS[1 - attacker_idx][sq]
+    pawn_attacks = PAWN_ATTACKS[attacker_idx][sq]
     pawn_piece = R_PAWN if attacker_player == PLAYER_R else B_PAWN
     if pawn_attacks & bb.piece_bitboards[PIECE_TO_BB_INDEX[pawn_piece]]:
         return True
@@ -365,7 +365,7 @@ def is_check(bb: Bitboard, player: int) -> bool:
     # b. 两者之间不能有任何棋子
     occupied = bb.occupied_bitboard
     min_sq, max_sq = min(king_sq, opponent_king_sq), max(king_sq, opponent_king_sq)
-    
+
     # 构造两者之间所有格子的掩码
     between_mask = 0
     # 从min_sq的下一行开始，到max_sq之前
