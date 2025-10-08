@@ -169,7 +169,7 @@ class Engine:
 
         # --- 重复局面检测 ---
         # 如果当前局面在历史中重复出现，认为是和棋。
-        if depth > 0 and bb.history.count(bb.hash_key) > 1:
+        if depth > 0 and bb.history.count(bb.hash_key) > 2:
             return 0, None
 
         # --- 置换表查询 ---
