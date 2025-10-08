@@ -285,4 +285,5 @@ class Bitboard:
         new_bb.player_to_move = self.player_to_move
         new_bb.hash_key = self.hash_key
         new_bb.history = self.history[:]
+        new_bb.board = self.board[:]
         return new_bb
