@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+'''
 位棋盘 (Bitboard) 数据结构实现。
 
 该模块定义了 `Bitboard` 类，它是整个引擎的棋盘表示核心。
@@ -9,7 +9,7 @@
 
 该实现还包含了Zobrist哈希，用于快速地为每个棋盘局面生成一个唯一的哈希值，
 这对于置换表的实现至关重要。
-"""
+'''
 
 from typing import Optional
 from src.constants import *
@@ -38,7 +38,7 @@ BB_INDEX_TO_PIECE = {v: k for k, v in PIECE_TO_BB_INDEX.items()}
 
 
 class Bitboard:
-    """
+    '''
     象棋位棋盘数据结构。
 
     使用一组整数来表示棋盘状态，使得操作可以通过高效的位运算完成。
@@ -49,15 +49,15 @@ class Bitboard:
         player_to_move (int): 当前走棋方 (PLAYER_R 或 PLAYER_B)。
         hash_key (int): 当前局面的Zobrist哈希值。
         history (list[int]): 记录历史Zobrist哈希值的列表，用于检测重复局面。
-    """
+    '''
     @staticmethod
     def get_player(piece: int) -> int:
-        """根据棋子的整数表示获取其所属玩家。"""
+        '''根据棋子的整数表示获取其所属玩家。'''
         return PLAYER_R if piece > 0 else PLAYER_B
 
     @staticmethod
     def piece_to_zobrist_idx(piece: int) -> int:
-        """将棋子整数表示转换为其在Zobrist键数组中的索引。"""
+        '''将棋子整数表示转换为其在Zobrist键数组中的索引。'''
         if piece < 0:
             return abs(piece) - 1  # 黑方棋子索引 0-6
         elif piece > 0:
@@ -65,11 +65,11 @@ class Bitboard:
         return -1  # 不应发生
 
     def __init__(self, fen: Optional[str] = None):
-        """
+        '''
         初始化位棋盘。
 
         可以从一个FEN字符串初始化，或者创建一个默认的开局局面。
-        """
+        '''
         self.piece_bitboards = [0] * 14
         self.color_bitboards = [0] * 2
         self.player_to_move = PLAYER_R
@@ -87,13 +87,13 @@ class Bitboard:
 
     @staticmethod
     def get_player_bb_idx(player: int) -> int:
-        """获取玩家在 `color_bitboards` 数组中的索引 (0 for Red, 1 for Black)。"""
+        '''获取玩家在 `color_bitboards` 数组中的索引 (0 for Red, 1 for Black)。'''
         return 0 if player == PLAYER_R else 1
 
     def parse_fen(self, fen: str):
-        """
+        '''
         从FEN (Forsyth-Edwards Notation) 字符串解析棋盘局面。
-        """
+        '''
         parts = fen.split(' ')
         fen_board, player_char = parts[0], parts[1]
 
@@ -122,14 +122,14 @@ class Bitboard:
             self.hash_key ^= zobrist_player
 
     def setup_default_position(self):
-        """设置中国象棋的默认开局局面。"""
-        self.parse_fen("rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1")
+        '''设置中国象棋的默认开局局面。'''
+        self.parse_fen('rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1')
 
     def _set_piece(self, piece_type: int, sq: int):
-        """
+        '''
         在指定位置放置一个棋子，并更新所有相关的位棋盘和Zobrist哈希值。
         这是一个内部辅助函数，主要用于初始化。
-        """
+        '''
         mask = SQUARE_MASKS[sq]
         player = Bitboard.get_player(piece_type)
         r, c = sq // 9, sq % 9
@@ -144,7 +144,7 @@ class Bitboard:
         self.hash_key ^= zobrist_keys[Bitboard.piece_to_zobrist_idx(piece_type)][r][c]
 
     def move_piece(self, from_sq: int, to_sq: int) -> int:
-        """
+        '''
         在棋盘上执行一步走法。
 
         这会更新所有位棋盘和Zobrist哈希值。这是一个增量更新，比重新计算整个
@@ -156,7 +156,7 @@ class Bitboard:
 
         Returns:
             int: 被吃掉的棋子类型，如果没有吃子则返回EMPTY。
-        """
+        '''
         moving_piece = self.board[from_sq]
         if moving_piece == EMPTY:
             return EMPTY
@@ -199,12 +199,12 @@ class Bitboard:
         return captured_piece
 
     def unmove_piece(self, from_sq: int, to_sq: int, captured_piece: int):
-        """
+        '''
         撤销一步走法。
 
         这是 `move_piece` 的逆操作，用于在搜索中恢复棋盘状态。
         撤销的顺序与执行走法的顺序严格相反。
-        """
+        '''
         self.history.pop()
         moving_piece = self.board[to_sq]  # 使用邮箱快速查找
         r_from, c_from = from_sq // 9, from_sq % 9
@@ -238,28 +238,28 @@ class Bitboard:
             self.hash_key ^= zobrist_keys[captured_z_idx][r_to][c_to]
 
     def get_piece_on_square(self, sq: int) -> int:
-        """获取指定位置上的棋子。"""
+        '''获取指定位置上的棋子。'''
         return self.board[sq]
 
     @property
     def occupied_bitboard(self) -> int:
-        """返回一个表示所有棋子位置的位棋盘。"""
+        '''返回一个表示所有棋子位置的位棋盘。'''
         return self.color_bitboards[0] | self.color_bitboards[1]
 
     def __str__(self) -> str:
-        """返回一个用于调试的、人类可读的棋盘字符串表示。"""
+        '''返回一个用于调试的、人类可读的棋盘字符串表示。'''
         builder = []
         for r in range(10):
             row_str = [PIECE_TO_FEN_CHAR.get(self.get_piece_on_square(r * 9 + c), '.') for c in range(9)]
-            builder.append(" ".join(row_str))
-        return "\n".join(builder)
+            builder.append(' '.join(row_str))
+        return '\n'.join(builder)
 
     def to_fen(self) -> str:
-        """将当前棋盘局面转换为FEN字符串。"""
+        '''将当前棋盘局面转换为FEN字符串。'''
         fen_parts = []
         for r in range(10):
             empty_count = 0
-            row_str = ""
+            row_str = ''
             for c in range(9):
                 piece = self.get_piece_on_square(r * 9 + c)
                 if piece == EMPTY:
@@ -273,13 +273,13 @@ class Bitboard:
                 row_str += str(empty_count)
             fen_parts.append(row_str)
 
-        board_fen = "/".join(fen_parts)
+        board_fen = '/'.join(fen_parts)
         player_fen = 'w' if self.player_to_move == PLAYER_R else 'b'
         # 注意：这里的步数、吃子等信息是占位符
-        return f"{board_fen} {player_fen} - - 0 1"
+        return f'{board_fen} {player_fen} - - 0 1'
 
     def copy(self):
-        """创建一个当前Bitboard对象的深拷贝。"""
+        '''创建一个当前Bitboard对象的深拷贝。'''
         new_bb = Bitboard()
         new_bb.piece_bitboards = self.piece_bitboards[:]
         new_bb.color_bitboards = self.color_bitboards[:]

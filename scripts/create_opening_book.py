@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+'''
 开局库生成脚本。
 
 该脚本会扫描指定目录下的棋谱文件（特定格式），解析出其中的走法，
@@ -7,7 +7,7 @@
 值是该局面下所有出现过的、合法的后继走法列表。
 
 生成的开局库将保存为 JSON 文件，供引擎在开局阶段查询使用。
-"""
+'''
 
 import os
 import re
@@ -26,10 +26,10 @@ MAX_PLY = 20  # 开局库记录的最大步数（半回合）
 
 
 def parse_movelist(content: str) -> list[str]:
-    """
+    '''
     从文件内容中解析出所有走法列表（包括主变着和所有变着）。
     文件格式是DhtmlXQ使用的格式。
-    """
+    '''
     movelists = []
     content = content.replace('\r', '').replace('\n', '')
 
@@ -50,10 +50,10 @@ def parse_movelist(content: str) -> list[str]:
 
 
 def parse_move_str(move_str: str) -> Optional[Move]:
-    """
+    '''
     将4位数字的走法字符串转换为绝对坐标走法 ((from_r, from_c), (to_r, to_c))。
     格式: c1r1c2r2 (列1行1列2行2)
-    """
+    '''
     if len(move_str) != 4 or not move_str.isdigit():
         return None
     c1, r1, c2, r2 = map(int, list(move_str))
@@ -61,9 +61,9 @@ def parse_move_str(move_str: str) -> Optional[Move]:
 
 
 def build_book():
-    """
+    '''
     扫描棋谱文件，构建并保存开局库。
-    """
+    '''
     opening_book = {}
     file_count = 0
 

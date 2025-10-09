@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+'''
 象棋引擎核心，负责搜索和评估。
 
 该模块包含了Engine类，它是驱动象棋AI的核心。它实现了基于Alpha-Beta剪枝的
@@ -10,7 +10,7 @@
 - 后期走法裁减 (Late Move Reductions)
 - 历史启发 (History Heuristic)
 - 开局库 (Opening Book)
-"""
+'''
 
 import math
 import time
@@ -37,12 +37,12 @@ TT_UPPER = 2  # 上界值 (Upper bound, beta)
 
 
 class StopSearchException(Exception):
-    """当搜索时间超过限制时抛出此异常。"""
+    '''当搜索时间超过限制时抛出此异常。'''
     pass
 
 
 class Engine:
-    """
+    '''
     象棋AI引擎类。
 
     Attributes:
@@ -52,10 +52,10 @@ class Engine:
         time_limit (float): 单次搜索的时间限制（秒）。
         opening_book (Dict): 开局库，存储从JSON文件中加载的开局走法。
         history_table (list): 历史启发表，用于走法排序，优先考虑在其他分支中表现好的走法。
-    """
+    '''
 
     def __init__(self):
-        """初始化引擎。"""
+        '''初始化引擎。'''
         self.transposition_table: Dict = {}
         self.nodes_searched = 0
         self.start_time = 0
@@ -66,11 +66,11 @@ class Engine:
         self._load_opening_book()
 
     def _clear_history_table(self):
-        """清空历史启发表。"""
+        '''清空历史启发表。'''
         self.history_table = [[0] * 90 for _ in range(14)]
 
     def _load_opening_book(self):
-        """从 '''opening_book.json''' 文件加载开局库。"""
+        '''从 opening_book.json 文件加载开局库。'''
         try:
             with open('''opening_book.json''', 'r') as f:
                 book_str_keys = json.load(f)
@@ -80,7 +80,7 @@ class Engine:
             print('未找到开局库文件, 将不使用开局库。')
 
     def query_opening_book(self, bb: Bitboard) -> Optional[Move]:
-        """
+        '''
         查询开局库。
 
         Args:
@@ -88,7 +88,7 @@ class Engine:
 
         Returns:
             Optional[Move]: 如果当前局面在开局库中，则返回一个推荐走法；否则返回None。
-        """
+        '''
         if not self.opening_book:
             return None
 
@@ -98,7 +98,7 @@ class Engine:
         return None
 
     def _quiescence_search(self, bb: Bitboard, alpha: float, beta: float) -> float:
-        """
+        '''
         静默搜索。
 
         在达到常规搜索深度后，继续搜索所有吃子走法，直到局面“平静”下来，
@@ -111,7 +111,7 @@ class Engine:
 
         Returns:
             float: 局面的评估值。
-        """
+        '''
         self.nodes_searched += 1
         self._check_time()
 
@@ -144,16 +144,16 @@ class Engine:
         return alpha
 
     def _check_time(self):
-        """
+        '''
         检查搜索是否超时。
         每搜索2048个节点检查一次，以减少时间检查的开销。
-        """
+        '''
         if (self.nodes_searched & 2047) == 0:
             if self.time_limit > 0 and time.time() - self.start_time >= self.time_limit:
                 raise StopSearchException()
 
     def _negamax(self, bb: Bitboard, depth: int, alpha: float, beta: float, allow_null: bool = True) -> Tuple[float, Optional[Move]]:
-        """
+        '''
         核心搜索函数，实现了带有多种优化的负极大值算法。
 
         Args:
@@ -165,7 +165,7 @@ class Engine:
 
         Returns:
             Tuple[float, Optional[Move]]: 返回评估分数和最佳走法。
-        """
+        '''
         self.nodes_searched += 1
         self._check_time()
 
@@ -322,7 +322,7 @@ class Engine:
         return best_value, best_move
 
     def search_by_time(self, bb: Bitboard, time_limit_seconds: float) -> Tuple[float, Optional[Move]]:
-        """
+        '''
         在给定的时间内进行搜索。
 
         采用迭代加深（Iterative Deepening）的方式，从深度1开始，
@@ -334,7 +334,7 @@ class Engine:
 
         Returns:
             Tuple[float, Optional[Move]]: 返回最终评估分数和找到的最佳走法。
-        """
+        '''
         board_copy = bb.copy()
         book_move = self.query_opening_book(board_copy)
         if book_move:
@@ -363,12 +363,12 @@ class Engine:
         end_time = time.time()
         time_taken = end_time - self.start_time
 
-        print(f"Score: {score}, depth: {i}, time: {time_taken:.2f}, nodes: {self.nodes_searched}")
+        print(f'Score: {score}, depth: {i}, time: {time_taken:.2f}, nodes: {self.nodes_searched}')
 
         return 0, last_completed_move
 
     def search_by_depth(self, bb: Bitboard, depth: int) -> Tuple[float, Optional[Move]]:
-        """
+        '''
         搜索指定的深度。
 
         同样采用迭代加深，但会一直搜索到指定的深度。
@@ -379,7 +379,7 @@ class Engine:
 
         Returns:
             Tuple[float, Optional[Move]]: 返回最终评估分数和找到的最佳走法。
-        """
+        '''
         board_copy = bb.copy()
         book_move = self.query_opening_book(board_copy)
         if book_move:

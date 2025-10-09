@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+'''
 游戏主程序模块。
 
 该模块使用 Pygame 库创建图形用户界面 (GUI)，并处理用户输入，
@@ -8,7 +8,7 @@
 - 接收并处理用户的鼠标点击和键盘事件（如悔棋、重开）。
 - 调用引擎进行思考并执行引擎的走法。
 - 判断游戏是否结束（将死或和棋）。
-"""
+'''
 
 import pygame
 import sys
@@ -31,7 +31,7 @@ pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Mini Xiangqi (R: Resart, U: Undo, T: Test FEN)')
 # 加载中文字体
-font_path = os.path.join(os.path.dirname(__file__), "assets", "SimHei.ttf")
+font_path = os.path.join(os.path.dirname(__file__), 'assets', 'SimHei.ttf')
 font = pygame.font.Font(font_path, 24)
 
 # --- 游戏核心状态变量 ---
@@ -45,7 +45,7 @@ game_result_message = ''  # 游戏结束时显示的信息
 
 
 def draw_board():
-    """绘制棋盘的网格、河流和九宫。"""
+    '''绘制棋盘的网格、河流和九宫。'''
     screen.fill(BOARD_COLOR)
     # 绘制棋盘网格线
     for i in range(10):
@@ -66,7 +66,7 @@ def draw_board():
 
 
 def draw_pieces():
-    """根据当前棋盘状态绘制所有棋子。"""
+    '''根据当前棋盘状态绘制所有棋子。'''
     piece_map = {
         1: '帅', 2: '仕', 3: '相', 4: '马', 5: '车', 6: '炮', 7: '兵',
         -1: '将', -2: '士', -3: '象', -4: '马', -5: '车', -6: '炮', -7: '卒',
@@ -95,7 +95,7 @@ def draw_pieces():
 
 
 def draw_last_move():
-    """高亮显示上一步走法。"""
+    '''高亮显示上一步走法。'''
     if last_move:
         from_r, from_c = last_move[0]
         to_r, to_c = last_move[1]
@@ -105,12 +105,12 @@ def draw_last_move():
 
 
 def is_game_over(board):
-    """
+    '''
     检查游戏是否结束。
 
     Returns:
         str: 如果游戏结束，返回结果信息 (如 '红方胜')；否则返回 None。
-    """
+    '''
 
     # 如果当前方没有合法走法
     if len(generate_moves(board)) == 0:
@@ -125,7 +125,7 @@ def is_game_over(board):
 
 
 def main():
-    """游戏主循环。"""
+    '''游戏主循环。'''
     global selected_piece_pos, board, last_move, move_history, game_over, game_result_message
     running = True
     while running:

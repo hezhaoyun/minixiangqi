@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+'''
 位棋盘 (Bitboard) 走法生成与合法性检测模块。
 
 该模块负责象棋引擎中所有与走法生成相关的功能。它完全基于位棋盘实现，
@@ -10,7 +10,7 @@
 - 生成当前局面的所有合法走法。
 
 为了提升性能，模块在启动时会预先计算并缓存所有棋子的基本攻击模式。
-"""
+'''
 
 from typing import List
 from src.bitboard import Bitboard, SQUARE_MASKS, PIECE_TO_BB_INDEX, BB_INDEX_TO_PIECE
@@ -33,77 +33,88 @@ HORSE_ATTACKS = [0] * 90  # 马 的攻击范围 (不考虑蹩马腿)
 HORSE_LEGS = {}           # 记录马的马腿位置
 PAWN_ATTACKS = [[0] * 90, [0] * 90]  # 兵/卒 的攻击范围 [player_idx][square]
 
-# --- 预计算辅助函数 ---
-
 
 def _sq(r, c):
-    """将行列坐标转换为棋盘位置索引 (0-89)。"""
+    '''将行列坐标转换为棋盘位置索引 (0-89)。'''
     return r * 9 + c
 
 
 def _is_valid(r, c):
-    """检查坐标 (r, c) 是否在棋盘范围内。"""
+    '''检查坐标 (r, c) 是否在棋盘范围内。'''
     return 0 <= r < 10 and 0 <= c < 9
+
+# --- 预计算辅助函数 ---
 
 
 def _precompute_king_guard_attacks():
-    """预计算帅/将和仕/士的攻击位棋盘。"""
+    '''预计算帅/将和仕/士的攻击位棋盘。'''
     for r in range(10):
         for c in range(9):
             sq = _sq(r, c)
+
             # 帅/将的走法 (九宫格内的直线移动)
             for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
                 nr, nc = r + dr, c + dc
+
                 # 限制在九宫格内
                 if not (3 <= nc <= 5 and (0 <= nr <= 2 or 7 <= nr <= 9)):
                     continue
+
                 KING_ATTACKS[sq] |= SQUARE_MASKS[_sq(nr, nc)]
+
             # 仕/士的走法 (九宫格内的斜线移动)
             for dr, dc in [(1, 1), (1, -1), (-1, 1), (-1, -1)]:
                 nr, nc = r + dr, c + dc
+
                 # 限制在九宫格内
                 if not (3 <= nc <= 5 and (0 <= nr <= 2 or 7 <= nr <= 9)):
                     continue
+
                 GUARD_ATTACKS[sq] |= SQUARE_MASKS[_sq(nr, nc)]
 
 
 def _precompute_bishop_horse_attacks():
-    """预计算象/相和马的攻击位棋盘及阻挡位置。"""
+    '''预计算象/相和马的攻击位棋盘及阻挡位置。'''
     for r in range(10):
         for c in range(9):
             from_sq = _sq(r, c)
             BISHOP_LEGS[from_sq] = {}
             HORSE_LEGS[from_sq] = {}
 
-            # 象/相的走法 ("田"字)
+            # 象/相的走法 ('田'字)
             for dr, dc in [(2, 2), (2, -2), (-2, 2), (-2, -2)]:
                 nr, nc = r + dr, c + dc
                 if not _is_valid(nr, nc):
                     continue
+
                 to_sq = _sq(nr, nc)
                 BISHOP_ATTACKS[from_sq] |= SQUARE_MASKS[to_sq]
+
                 # 记录象眼位置
                 leg_r, leg_c = r + dr // 2, c + dc // 2
                 BISHOP_LEGS[from_sq][to_sq] = _sq(leg_r, leg_c)
 
-            # 马的走法 ("日"字)
+            # 马的走法 ('日'字)
             for dr, dc in [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2)]:
                 nr, nc = r + dr, c + dc
                 if not _is_valid(nr, nc):
                     continue
+
                 to_sq = _sq(nr, nc)
                 HORSE_ATTACKS[from_sq] |= SQUARE_MASKS[to_sq]
+
                 # 记录马腿位置
                 leg_r, leg_c = r, c
                 if abs(dr) == 2:
                     leg_r += dr // 2
                 else:
                     leg_c += dc // 2
+
                 HORSE_LEGS[from_sq][to_sq] = _sq(leg_r, leg_c)
 
 
 def _precompute_pawn_attacks():
-    """预计算兵/卒的攻击位棋盘。"""
+    '''预计算兵/卒的攻击位棋盘。'''
     for r in range(10):
         for c in range(9):
             sq = _sq(r, c)
@@ -140,8 +151,9 @@ _precompute_pawn_attacks()
 # Directions: 0:N, 1:E, 2:S, 3:W
 RAYS = [[0] * 90, [0] * 90, [0] * 90, [0] * 90]
 
+
 def _precompute_rays():
-    """预计算所有位置在四个基本方向上的射线。"""
+    '''预计算所有位置在四个基本方向上的射线。'''
     for sq in range(90):
         r, c = sq // 9, sq % 9
         # North (Up)
@@ -157,14 +169,16 @@ def _precompute_rays():
         for i in range(c - 1, -1, -1):
             RAYS[3][sq] |= SQUARE_MASKS[_sq(r, i)]
 
+
 _precompute_rays()
 
+
 def get_rook_moves_bb(sq: int, occupied: int) -> int:
-    """
+    '''
     获取车在给定位置的走法位棋盘 (使用射线预计算)。
-    """
+    '''
     final_attacks = 0
-    
+
     # North (decreasing index) -> MSB
     ray = RAYS[0][sq]
     blockers = occupied & ray
@@ -200,22 +214,22 @@ def get_rook_moves_bb(sq: int, occupied: int) -> int:
         final_attacks |= (ray ^ RAYS[3][first_blocker]) | SQUARE_MASKS[first_blocker]
     else:
         final_attacks |= ray
-        
+
     return final_attacks
 
 
 def get_cannon_moves_bb(sq: int, occupied: int) -> int:
-    """
+    '''
     获取炮在给定位置的走法位棋盘 (使用射线预计算)。
-    """
+    '''
     attacks = 0
-    
+
     # North (decreasing index) -> MSB
     ray = RAYS[0][sq]
     blockers = occupied & ray
     if blockers:
         screen = blockers.bit_length() - 1
-        attacks |= ray ^ RAYS[0][screen] ^ SQUARE_MASKS[screen] # Empty squares before screen
+        attacks |= ray ^ RAYS[0][screen] ^ SQUARE_MASKS[screen]  # Empty squares before screen
         remaining_blockers = blockers ^ SQUARE_MASKS[screen]
         if remaining_blockers:
             target = remaining_blockers.bit_length() - 1
@@ -261,12 +275,12 @@ def get_cannon_moves_bb(sq: int, occupied: int) -> int:
             attacks |= SQUARE_MASKS[target]
     else:
         attacks |= ray
-        
+
     return attacks
 
 
 def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
-    """
+    '''
     为指定方生成所有伪合法走法。
 
     伪合法走法是指不考虑走棋后是否会被将军的所有可能走法。
@@ -277,7 +291,7 @@ def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
 
     Returns:
         List[Move]: 一个包含所有伪合法走法的列表。
-    """
+    '''
     moves = []
     player_idx = 0 if player == PLAYER_R else 1
     own_pieces_bb = bb.color_bitboards[player_idx]
@@ -343,7 +357,7 @@ def generate_all_moves(bb: Bitboard, player: int) -> List[Move]:
 
 
 def is_square_attacked_by(bb: Bitboard, sq: int, attacker_player: int) -> bool:
-    """
+    '''
     检查指定位置 `sq` 是否被 `attacker_player` 方攻击。
 
     Args:
@@ -353,7 +367,7 @@ def is_square_attacked_by(bb: Bitboard, sq: int, attacker_player: int) -> bool:
 
     Returns:
         bool: 如果位置被攻击，则返回True；否则返回False。
-    """
+    '''
     occupied = bb.occupied_bitboard
     attacker_idx = 0 if attacker_player == PLAYER_R else 1
 
@@ -410,7 +424,7 @@ def is_square_attacked_by(bb: Bitboard, sq: int, attacker_player: int) -> bool:
 
 
 def is_check(bb: Bitboard, player: int) -> bool:
-    """
+    '''
     检查指定方 `player` 是否被将军。
 
     Args:
@@ -419,7 +433,7 @@ def is_check(bb: Bitboard, player: int) -> bool:
 
     Returns:
         bool: 如果被将军，则返回True；否则返回False。
-    """
+    '''
     king_piece = R_KING if player == PLAYER_R else B_KING
     king_sq_bb = bb.piece_bitboards[PIECE_TO_BB_INDEX[king_piece]]
     if not king_sq_bb:
@@ -460,7 +474,7 @@ def is_check(bb: Bitboard, player: int) -> bool:
 
 
 def generate_moves(bb: Bitboard) -> List[Move]:
-    """
+    '''
     为当前走棋方生成所有合法的走法。
 
     这个函数是最终的走法生成接口。它首先生成所有伪合法走法，
@@ -471,7 +485,7 @@ def generate_moves(bb: Bitboard) -> List[Move]:
 
     Returns:
         List[Move]: 一个包含所有合法走法的列表。
-    """
+    '''
     legal_moves = []
     player = bb.player_to_move
 

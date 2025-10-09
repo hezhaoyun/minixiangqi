@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-"""
+'''
 中国象棋评估函数 - 位棋盘版本
-"""
+'''
 import copy
 from typing import List, Tuple
 

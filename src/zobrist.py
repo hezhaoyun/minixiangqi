@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+'''
 Zobrist 哈希实现模块。
 
 Zobrist哈希是一种将棋盘上每个可能的局面都映射到一个唯一的（或极少碰撞的）
@@ -12,7 +12,7 @@ Zobrist哈希是一种将棋盘上每个可能的局面都映射到一个唯一�
 
 这使得哈希计算非常高效，是实现置换表（Transposition Table）等高级
 象棋引擎技术的基础。
-"""
+'''
 
 import random
 
@@ -27,12 +27,12 @@ zobrist_player = 0
 
 
 def _initialize_zobrist_keys():
-    """
+    '''
     初始化Zobrist哈希所需的所有随机数。
 
     此函数在模块加载时被调用一次。为了保证每次运行程序时生成的哈希键都相同，
     使用了固定的随机种子。
-    """
+    '''
     global zobrist_player
     # 使用固定种子以确保每次生成的随机数都一样
     random.seed(0)

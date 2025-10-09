@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+'''
 引擎自我对弈模拟脚本。
 
 该脚本让引擎自己与自己下棋，用于测试引擎的稳定性和棋力。
@@ -7,7 +7,7 @@
 
 注意：此脚本使用了旧的Board类，与当前项目的Bitboard不兼容。
 在运行前需要确保有 `src.board` 模块或将其适配为 `src.bitboard`。
-"""
+'''
 
 from src.constants import *
 from src.engine import Engine
@@ -15,10 +15,10 @@ from src.board import Board, Move
 
 
 def print_board_text(board: Board, last_move: Move = None):
-    """
+    '''
     以文本形式在终端打印棋盘,并用颜色区分红黑双方。
     使用ANSI转义序列来显示颜色。
-    """
+    '''
 
     # ANSI 颜色代码
     END_COLOR = '\033[0m'      # 重置颜色
@@ -70,21 +70,21 @@ def print_board_text(board: Board, last_move: Move = None):
 
 
 def main():
-    """
+    '''
     主函数, 模拟引擎自我对弈。
-    """
+    '''
     SIMULATE_STEPS = 24  # 模拟的总步数（半回合）
 
     game_board = Board()
     engine = Engine()
 
-    print("--- 引擎自我对弈开始 ---")
+    print('--- 引擎自我对弈开始 ---')
     print_board_text(game_board)
 
     for i in range(SIMULATE_STEPS):
-        print(f"\n--- 第 {i+1} 回合 ---")
-        player_name = "红方" if game_board.player_to_move == PLAYER_R else "黑方"
-        print(f"轮到 {player_name} 走棋...")
+        print(f'\n--- 第 {i+1} 回合 ---')
+        player_name = '红方' if game_board.player_to_move == PLAYER_R else '黑方'
+        print(f'轮到 {player_name} 走棋...')
 
         # --- 调用引擎进行搜索 ---
         # 可以选择按时间限制或按深度限制
