@@ -23,12 +23,6 @@
             "module": "src.evaluate"
         },
         {
-            "name": "simulated_confrontation",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "scripts.simulated_confrontation"
-        },
-        {
             "name": "main",
             "type": "debugpy",
             "request": "launch",
