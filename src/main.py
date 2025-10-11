@@ -138,7 +138,7 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_t:  # T键: 加载测试FEN局面
                     board = Board('4kabn1/3Pa4/2c1b4/2c5p/p3CN3/9/9/9/3K5/9 w - - 0 1')
-                    board = Board('rnbakCb1r/9/7c1/p1p1p1p1p/9/9/P1P1P1P1P/1C7/9/RcBAKABNR b - - 0 1')
+                    # board = Board('rnbakCb1r/9/7c1/p1p1p1p1p/9/9/P1P1P1P1P/1C7/9/RcBAKABNR b - - 0 1')
                     selected_piece_pos = None
                     last_move = None
                     move_history = []
