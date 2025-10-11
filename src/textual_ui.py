@@ -85,13 +85,13 @@ class XiangqiBoard(Static):
 
                 content = ""
                 if piece == 0:
-                    content = "・ "
+                    content = "・"
                 else:
                     player = 1 if piece > 0 else -1
                     color = "red" if player == PLAYER_R else "white"
                     piece_char = piece_map.get(piece, ' ')
                     # Pad CJK character with a space to make it 3-wide
-                    content = f"[{color}]{piece_char}[/{color}] "
+                    content = f"[{color}]{piece_char}[/{color}]"
 
                 is_last_move_sq = False
                 if self.last_move:
@@ -102,11 +102,11 @@ class XiangqiBoard(Static):
                         is_last_move_sq = True
 
                 if self.selected_piece_pos and self.selected_piece_pos == (r, c):
-                    row_display.append(f"[reverse]{content}[/reverse]")
+                    row_display.append(f"[reverse]{content}[/reverse] ")
                 elif is_last_move_sq:
-                    row_display.append(f"[on green]{content}[/on green]")
+                    row_display.append(f"[on green]{content}[/on green] ")
                 else:
-                    row_display.append(content)
+                    row_display.append(content + ' ')
 
             board_rows.append("".join(row_display))
 
