@@ -1,4 +1,5 @@
 venv/
+pypyvenv/
 __pycache__/
 opening_book.json
 javachess/
